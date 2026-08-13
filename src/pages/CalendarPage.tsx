@@ -21,6 +21,13 @@ const statusLabels = {
   today: 'Сегодня',
 }
 
+const statusSymbols = {
+  planned: '○',
+  completed: '✓',
+  missed: '×',
+  today: '●',
+} as const
+
 interface CalendarPageProps {
   selectedDate?: string
 }
@@ -34,6 +41,7 @@ function getMonthStateFromIsoDate(isoDate?: string) {
   }
 
   const [year, month] = isoDate.split('-').map(Number)
+
   return {
     year: year || TODAY_DATE.getFullYear(),
     monthIndex: (month || TODAY_DATE.getMonth() + 1) - 1,
@@ -42,6 +50,7 @@ function getMonthStateFromIsoDate(isoDate?: string) {
 
 function shiftMonth(year: number, monthIndex: number, direction: -1 | 1) {
   const nextDate = new Date(year, monthIndex + direction, 1)
+
   return {
     year: nextDate.getFullYear(),
     monthIndex: nextDate.getMonth(),
@@ -117,7 +126,8 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
       <div className="page-card__header">
         <h2 className="page-card__title">Календарь</h2>
         <p className="page-card__text">
-          Просматривай тренировки по месяцам и переходи между датами вперёд и назад.
+          Просматривай тренировки по месяцам и переходи между датами вперёд и
+          назад.
         </p>
       </div>
 
@@ -127,7 +137,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
           className="calendar-month-bar__button"
           onClick={goToPreviousMonth}
         >
-          ← Предыдущий
+          ← Назад
         </button>
         <div className="calendar-month-bar__title">
           <strong>{formatMonthTitle(visibleMonth.year, visibleMonth.monthIndex)}</strong>
@@ -138,7 +148,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
           className="calendar-month-bar__button"
           onClick={goToNextMonth}
         >
-          Следующий →
+          Вперёд →
         </button>
       </div>
 
@@ -162,10 +172,17 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
       </div>
 
       <div className="calendar-legend" aria-label="Легенда календаря">
-        <span className="calendar-legend__item calendar-legend__item--today">Сегодня</span>
-        <span className="calendar-legend__item calendar-legend__item--completed">Выполнено</span>
-        <span className="calendar-legend__item calendar-legend__item--planned">Запланировано</span>
-        <span className="calendar-legend__item calendar-legend__item--missed">Пропущено</span>
+        <span className="calendar-legend__item calendar-legend__item--today">● Сегодня</span>
+        <span className="calendar-legend__item calendar-legend__item--completed">
+          ✓ Выполнено
+        </span>
+        <span className="calendar-legend__item calendar-legend__item--planned">
+          ○ Запланировано
+        </span>
+        <span className="calendar-legend__item calendar-legend__item--missed">
+          × Пропущено
+        </span>
+        <span className="calendar-legend__item">– Выходной</span>
       </div>
 
       <div
@@ -183,7 +200,6 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
             return <div key={day.isoDate} className="calendar-day calendar-day--empty" />
           }
 
-          const historyEntry = history.find((entry) => entry.date === day.isoDate)
           const statusText =
             day.status === 'idle' ? 'Нет тренировки' : statusLabels[day.status]
 
@@ -195,34 +211,19 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
                 day.isTrainingDay ? ' calendar-day--training' : ''
               }${day.isoDate === selectedDate ? ' calendar-day--selected' : ''}`}
               onClick={() => setSelectedDate(day.isoDate)}
+              aria-label={`${formatCalendarDate(day.isoDate)}. ${statusText}`}
               aria-pressed={day.isoDate === selectedDate}
             >
               <div className="calendar-day__top">
                 <strong>{day.dayNumber}</strong>
-                {day.isTrainingDay ? (
-                  <span className="calendar-day__badge">{statusText}</span>
-                ) : (
-                  <span className="calendar-day__badge calendar-day__badge--rest">
-                    Выходной
-                  </span>
-                )}
+                <span
+                  className={`calendar-day__badge${
+                    day.isTrainingDay ? '' : ' calendar-day__badge--rest'
+                  }`}
+                >
+                  {day.isTrainingDay && day.status !== 'idle' ? statusSymbols[day.status] : '–'}
+                </span>
               </div>
-
-              <p className="calendar-day__text">
-                {day.isTrainingDay
-                  ? `Тренировочный день: ${statusText.toLowerCase()}.`
-                  : 'Нет плановой тренировки.'}
-              </p>
-
-              {historyEntry ? (
-                <p className="calendar-day__text">
-                  Упражнений сохранено: {historyEntry.entries.length}.
-                </p>
-              ) : null}
-
-              {day.isoDate === TODAY_ISO ? (
-                <p className="calendar-day__text">Текущая дата месяца.</p>
-              ) : null}
             </button>
           )
         })}

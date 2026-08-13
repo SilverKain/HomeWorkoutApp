@@ -463,13 +463,8 @@ export function TodayPage() {
                   <strong>
                     {isRestActive
                       ? `Отдых идёт: ${formatRestSeconds(restSecondsLeft)}`
-                      : 'Готово к следующему подходу'}
+                      : 'Таймер отдыха не запущен'}
                   </strong>
-                  <p>
-                    {isRestActive
-                      ? 'Таймер запущен для текущего упражнения.'
-                      : 'После подхода можно запустить отдых одной кнопкой.'}
-                  </p>
                 </div>
 
                 <div className="progression-hint">

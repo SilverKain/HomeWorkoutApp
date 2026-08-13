@@ -797,7 +797,7 @@
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
+  gap: 2px;
   margin-top: 18px;
 }
 
@@ -810,14 +810,14 @@
 }
 
 .calendar-day {
-  min-height: 124px;
-  padding: 12px;
-  border-radius: 18px;
+  min-height: 72px;
+  padding: 8px;
+  border-radius: 14px;
   background: #fffdf9;
   border: 1px solid rgba(123, 86, 50, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   text-align: left;
   cursor: pointer;
 }
@@ -853,20 +853,26 @@
 
 .calendar-day__top {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
 .calendar-day__top strong {
   color: var(--color-heading);
+  font-size: 0.98rem;
 }
 
 .calendar-day__badge {
   display: inline-flex;
-  align-self: flex-start;
-  padding: 5px 10px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 1rem;
+  font-weight: 800;
   background: rgba(44, 28, 16, 0.08);
 }
 
@@ -2131,7 +2137,7 @@
   }
 
   .calendar-grid {
-    gap: 4px;
+    gap: 0;
   }
 
   .calendar-grid__weekday {
@@ -2170,64 +2176,24 @@
   }
 
   .calendar-day {
-    min-height: 76px;
-    padding: 8px 6px;
-    border-radius: 14px;
-    gap: 5px;
-  }
-
-  .calendar-day__badge {
-    min-height: 22px;
-    padding: 3px 7px;
-    font-size: 0;
-    line-height: 1;
-  }
-
-  .calendar-day__badge::after {
-    font-size: 0.56rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  .calendar-day--today .calendar-day__badge::after {
-    content: 'Сегодня';
-  }
-
-  .calendar-day--completed .calendar-day__badge::after {
-    content: 'Готово';
-  }
-
-  .calendar-day--planned .calendar-day__badge::after {
-    content: 'План';
-  }
-
-  .calendar-day--missed .calendar-day__badge::after {
-    content: 'Пропуск';
-  }
-
-  .calendar-day__badge--rest::after {
-    content: 'Отдых';
+    min-height: 56px;
+    padding: 6px;
+    border-radius: 10px;
+    gap: 0;
   }
 
   .calendar-day__top {
-    gap: 4px;
+    gap: 6px;
   }
 
   .calendar-day__top strong {
-    font-size: 0.92rem;
+    font-size: 0.82rem;
   }
 
-  .calendar-day__text {
-    font-size: 0.64rem;
-    line-height: 1.2;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .calendar-day__text:nth-of-type(n + 2) {
-    display: none;
+  .calendar-day__badge {
+    width: 22px;
+    height: 22px;
+    font-size: 0.82rem;
   }
 
   .calendar-legend {
