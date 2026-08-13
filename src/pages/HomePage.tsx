@@ -15,8 +15,10 @@ import {
   savePlannedWorkouts,
 } from '../services/plannedWorkouts.ts'
 import { loadWorkoutHistory } from '../services/workoutHistory.ts'
+import { getTodayDateLabel, getTodayIsoDate } from '../utils/today.ts'
 
-const TODAY_DATE = '2026-08-12'
+const TODAY_DATE = getTodayIsoDate()
+const TODAY_LABEL = getTodayDateLabel()
 
 const trainingDayLabels: Record<string, string> = {
   0: 'Вс',
@@ -232,7 +234,7 @@ export function HomePage({
           ) : (
             <>
               <h3>План пока не создан</h3>
-              <p>На 12 августа 2026 года будущая тренировка ещё не сохранена.</p>
+              <p>На {TODAY_LABEL} будущая тренировка ещё не сохранена.</p>
               <p>Нажми кнопку справа, и приложение соберёт неделю Пн / Ср / Пт.</p>
             </>
           )}

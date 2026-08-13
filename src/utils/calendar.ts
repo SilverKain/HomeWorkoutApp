@@ -1,4 +1,5 @@
 import type { WorkoutHistoryEntry } from '../types/workout.ts'
+import { getTodayIsoDate } from './today.ts'
 
 export type CalendarDayStatus =
   | 'idle'
@@ -15,7 +16,6 @@ export interface CalendarDay {
   status: CalendarDayStatus
 }
 
-const TODAY_ISO = '2026-08-12'
 const TRAINING_DAY_INDEXES = new Set([1, 3, 5])
 
 function formatIsoDate(date: Date) {
@@ -35,7 +35,9 @@ export function getCalendarStatus(
   trainingDay: boolean,
   history: WorkoutHistoryEntry[],
 ): CalendarDayStatus {
-  if (isoDate === TODAY_ISO) {
+  const todayIso = getTodayIsoDate()
+
+  if (isoDate === todayIso) {
     return 'today'
   }
 
@@ -49,7 +51,7 @@ export function getCalendarStatus(
     return 'completed'
   }
 
-  return isoDate < TODAY_ISO ? 'missed' : 'planned'
+  return isoDate < todayIso ? 'missed' : 'planned'
 }
 
 export function buildMonthCalendar(

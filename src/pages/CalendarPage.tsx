@@ -7,9 +7,11 @@ import {
   formatCalendarDate,
   formatMonthTitle,
 } from '../utils/calendar.ts'
+import { getTodayDate, getTodayDateLabel, getTodayIsoDate } from '../utils/today.ts'
 
-const TODAY_ISO = '2026-08-12'
-const TODAY_DATE = new Date('2026-08-12T00:00:00')
+const TODAY_ISO = getTodayIsoDate()
+const TODAY_DATE = getTodayDate()
+const TODAY_LABEL = getTodayDateLabel()
 const weekDayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 const statusLabels = {
@@ -129,7 +131,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
         </button>
         <div className="calendar-month-bar__title">
           <strong>{formatMonthTitle(visibleMonth.year, visibleMonth.monthIndex)}</strong>
-          <p>Сегодня: 12 августа 2026</p>
+          <p>Сегодня: {TODAY_LABEL}</p>
         </div>
         <button
           type="button"

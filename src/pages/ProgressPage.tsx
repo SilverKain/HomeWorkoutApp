@@ -2,8 +2,9 @@ import { calculateEffectivenessScores } from '../algorithms/index.ts'
 import { exercises, muscleGroups } from '../data/index.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import { loadWorkoutHistory } from '../services/workoutHistory.ts'
+import { getTodayIsoDate } from '../utils/today.ts'
 
-const TODAY_DATE = '2026-08-12'
+const TODAY_DATE = getTodayIsoDate()
 
 interface ExerciseHistoryPoint {
   date: string

@@ -17,11 +17,12 @@ import {
   subscribeToFirebaseAuth,
   subscribeToFirebaseTrainingState,
 } from './services/index.ts'
+import { getTodayIsoDate } from './utils/today.ts'
 import './App.css'
 
 function App() {
   const [activePage, setActivePage] = useState<NavigationId>('home')
-  const [calendarSelectedDate, setCalendarSelectedDate] = useState('2026-08-12')
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => getTodayIsoDate())
   const [syncVersion, setSyncVersion] = useState(0)
   const [firebaseUser, setFirebaseUser] = useState<User | null>(() => getCurrentFirebaseUser())
   const [syncStatus, setSyncStatus] = useState('Синхронизация подключается...')

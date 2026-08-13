@@ -25,9 +25,9 @@ import type {
   WorkoutExerciseEntry,
   WorkoutHistoryEntry,
 } from '../types/workout.ts'
+import { getTodayIsoDate } from '../utils/today.ts'
 import { createWorkoutDraft, createWorkoutEntry } from '../utils/workoutDraft.ts'
 
-const TODAY_DATE = '2026-08-12'
 const REST_DURATION_SECONDS = 30
 
 function formatRestSeconds(value: number) {
@@ -37,6 +37,7 @@ function formatRestSeconds(value: number) {
 }
 
 export function TodayPage() {
+  const todayDate = getTodayIsoDate()
   const resolvedMuscleGroups = useMemo(() => resolveMuscleGroups(muscleGroups), [])
   const starterExercises = useMemo(() => exercises.slice(0, 4), [])
   const [draft, setDraft] = useState(() => createWorkoutDraft(starterExercises))
@@ -82,18 +83,18 @@ export function TodayPage() {
     history,
     exerciseMap,
     resolvedMuscleGroups,
-    TODAY_DATE,
+    todayDate,
     draft.entries,
   ).slice(0, 6)
   const needScores = calculateMuscleNeedScores(
     history,
     exerciseMap,
     resolvedMuscleGroups,
-    TODAY_DATE,
+    todayDate,
     draft.entries,
   ).slice(0, 6)
   const currentWeekPlans = plannedWorkouts
-    .filter((plan) => plan.date >= TODAY_DATE)
+    .filter((plan) => plan.date >= todayDate)
     .sort((left, right) => left.date.localeCompare(right.date))
     .slice(0, 3)
 
@@ -181,7 +182,7 @@ export function TodayPage() {
       exercises,
       resolvedMuscleGroups,
       history,
-      TODAY_DATE,
+      todayDate,
     )
 
     savePlannedWorkouts(nextPlans)
@@ -198,7 +199,7 @@ export function TodayPage() {
     }
 
     const savedEntry = saveWorkoutHistoryEntry({
-      date: TODAY_DATE,
+      date: todayDate,
       title: draft.title,
       entries: draft.entries,
     })
@@ -208,17 +209,17 @@ export function TodayPage() {
       exercises,
       resolvedMuscleGroups,
       nextHistory,
-      TODAY_DATE,
+      todayDate,
     )
 
-    removePlannedWorkoutByDate(TODAY_DATE)
+    removePlannedWorkoutByDate(todayDate)
     savePlannedWorkouts(recalculatedPlans)
     setHistory(nextHistory)
     setPlannedWorkouts(loadPlannedWorkouts())
     setSaveMessage(
       recalculatedPlans.length > 0
-        ? `Тренировка за ${TODAY_DATE} сохранена. План на ${recalculatedPlans[0].date} пересчитан по реальным результатам.`
-        : `Тренировка за ${TODAY_DATE} сохранена. Будущих тренировок на эту неделю уже не осталось.`,
+        ? `Тренировка за ${todayDate} сохранена. План на ${recalculatedPlans[0].date} пересчитан по реальным результатам.`
+        : `Тренировка за ${todayDate} сохранена. Будущих тренировок на эту неделю уже не осталось.`,
     )
   }
 
@@ -239,7 +240,7 @@ export function TodayPage() {
         </article>
         <article className="info-tile">
           <strong>Дата</strong>
-          <p>{TODAY_DATE}</p>
+          <p>{todayDate}</p>
         </article>
         <article className="info-tile">
           <strong>Выполнено</strong>
