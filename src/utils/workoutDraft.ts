@@ -8,6 +8,7 @@ export function createWorkoutEntry(exerciseId: string): WorkoutExerciseEntry {
     reps: 10,
     rir: 2,
     completed: false,
+    completedSets: 0,
   }
 }
 

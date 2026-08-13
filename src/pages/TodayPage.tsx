@@ -37,15 +37,24 @@ function formatRestSeconds(value: number) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
+function getCompletedSets(entry: WorkoutExerciseEntry) {
+  return Math.min(entry.completedSets ?? (entry.completed ? entry.sets : 0), entry.sets)
+}
+
+function getRestProgressWidth(secondsLeft: number) {
+  return Math.max(
+    0,
+    Math.min(100, ((REST_DURATION_SECONDS - secondsLeft) / REST_DURATION_SECONDS) * 100),
+  )
+}
+
 export function TodayPage() {
   const todayDate = getTodayIsoDate()
   const resolvedMuscleGroups = useMemo(() => resolveMuscleGroups(muscleGroups), [])
   const starterExercises = useMemo(() => exercises.slice(0, 4), [])
   const [draft, setDraft] = useState(() => createWorkoutDraft(starterExercises))
   const [exerciseToAdd, setExerciseToAdd] = useState(exercises[0]?.id ?? '')
-  const [history, setHistory] = useState<WorkoutHistoryEntry[]>(() =>
-    loadWorkoutHistory(),
-  )
+  const [history, setHistory] = useState<WorkoutHistoryEntry[]>(() => loadWorkoutHistory())
   const [plannedWorkouts, setPlannedWorkouts] = useState<PlannedWorkoutEntry[]>(
     () => loadPlannedWorkouts(),
   )
@@ -163,24 +172,33 @@ export function TodayPage() {
     setExerciseToAdd(nextAvailable?.id ?? '')
   }
 
-  function toggleExerciseComplete(exerciseId: string) {
+  function updateCompletedSets(exerciseId: string, nextCompletedSets: number) {
     const currentEntry = draft.entries.find((entry) => entry.exerciseId === exerciseId)
 
     if (!currentEntry) {
       return
     }
 
-    const nextCompleted = !currentEntry.completed
+    const currentCompletedSets = getCompletedSets(currentEntry)
+    const clampedCompletedSets = Math.max(
+      0,
+      Math.min(nextCompletedSets, currentEntry.sets),
+    )
+    const nextCompleted = clampedCompletedSets >= currentEntry.sets
 
     updateEntry(exerciseId, (entry) => ({
       ...entry,
+      completedSets: clampedCompletedSets,
       completed: nextCompleted,
     }))
 
-    if (nextCompleted) {
+    if (clampedCompletedSets > currentCompletedSets && clampedCompletedSets < currentEntry.sets) {
       setRestExerciseId(exerciseId)
       setRestSecondsLeft(REST_DURATION_SECONDS)
-    } else if (restExerciseId === exerciseId) {
+      return
+    }
+
+    if (restExerciseId === exerciseId) {
       setRestExerciseId(null)
       setRestSecondsLeft(0)
     }
@@ -247,8 +265,8 @@ export function TodayPage() {
       <div className="page-card__header">
         <h2 className="page-card__title">Сегодня</h2>
         <p className="page-card__text">
-          Здесь можно собрать тренировку, отмечать выполнение упражнений и
-          запускать 30-секундный отдых между подходами.
+          Здесь можно собрать тренировку, отмечать выполненные подходы и
+          автоматически отдыхать между ними.
         </p>
       </div>
 
@@ -284,7 +302,7 @@ export function TodayPage() {
           <p>
             {completedExerciseNames.length > 0
               ? `Готово: ${completedExerciseNames.join(', ')}`
-              : 'Пока ни одно упражнение не отмечено как выполненное.'}
+              : 'Пока ни одно упражнение не завершено полностью.'}
           </p>
         </div>
         <div className="workout-session-summary__rest">
@@ -294,6 +312,14 @@ export function TodayPage() {
               ? `${exerciseMap[restExerciseId]?.name ?? 'Упражнение'}: ${formatRestSeconds(restSecondsLeft)}`
               : 'Таймер отдыха не запущен'}
           </p>
+          <div className="workout-rest-progress" aria-hidden="true">
+            <div
+              className="workout-rest-progress__fill"
+              style={{
+                width: `${restExerciseId ? getRestProgressWidth(restSecondsLeft) : 0}%`,
+              }}
+            />
+          </div>
           {restExerciseId ? (
             <button
               type="button"
@@ -345,6 +371,7 @@ export function TodayPage() {
               return null
             }
 
+            const completedSets = getCompletedSets(entry)
             const progressionSuggestion = getProgressionSuggestion(
               exercise,
               history,
@@ -401,8 +428,36 @@ export function TodayPage() {
                     </p>
                   </div>
                   <div className="workout-entry-card__stat">
-                    <strong>Тип движения</strong>
-                    <p>{exercise.movementType}</p>
+                    <strong>Подходы</strong>
+                    <p>
+                      {completedSets} из {entry.sets} завершено
+                    </p>
+                  </div>
+                </div>
+
+                <div className="workout-set-progress">
+                  <div className="workout-set-progress__chips">
+                    {Array.from({ length: entry.sets }, (_, setIndex) => {
+                      const isCompletedSet = setIndex < completedSets
+
+                      return (
+                        <button
+                          key={`${entry.exerciseId}-set-${setIndex + 1}`}
+                          type="button"
+                          className={`workout-set-progress__chip${
+                            isCompletedSet ? ' workout-set-progress__chip--completed' : ''
+                          }`}
+                          onClick={() =>
+                            updateCompletedSets(
+                              entry.exerciseId,
+                              isCompletedSet ? setIndex : setIndex + 1,
+                            )
+                          }
+                        >
+                          {setIndex + 1}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -415,10 +470,20 @@ export function TodayPage() {
                       max="20"
                       value={entry.sets}
                       onChange={(event) =>
-                        updateEntry(entry.exerciseId, (current) => ({
-                          ...current,
-                          sets: Math.max(1, Number(event.target.value) || 1),
-                        }))
+                        updateEntry(entry.exerciseId, (current) => {
+                          const nextSets = Math.max(1, Number(event.target.value) || 1)
+                          const nextCompletedSets = Math.min(
+                            getCompletedSets(current),
+                            nextSets,
+                          )
+
+                          return {
+                            ...current,
+                            sets: nextSets,
+                            completedSets: nextCompletedSets,
+                            completed: nextCompletedSets >= nextSets,
+                          }
+                        })
                       }
                     />
                   </label>
@@ -459,18 +524,6 @@ export function TodayPage() {
                 <div className="workout-entry-card__actions">
                   <button
                     type="button"
-                    className={`workout-entry-card__complete-button${
-                      entry.completed
-                        ? ' workout-entry-card__complete-button--completed'
-                        : ''
-                    }`}
-                    onClick={() => toggleExerciseComplete(entry.exerciseId)}
-                  >
-                    {entry.completed ? 'Снять выполнение' : 'Отметить выполненным'}
-                  </button>
-
-                  <button
-                    type="button"
                     className="workout-rest-button"
                     onClick={() => startRestTimer(entry.exerciseId)}
                   >
@@ -484,6 +537,14 @@ export function TodayPage() {
                       ? `Отдых идёт: ${formatRestSeconds(restSecondsLeft)}`
                       : 'Таймер отдыха не запущен'}
                   </strong>
+                  <div className="workout-rest-progress" aria-hidden="true">
+                    <div
+                      className="workout-rest-progress__fill"
+                      style={{
+                        width: `${isRestActive ? getRestProgressWidth(restSecondsLeft) : 0}%`,
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="progression-hint">
@@ -491,13 +552,11 @@ export function TodayPage() {
                   <p>{progressionSuggestion.description}</p>
                   <p>
                     Цель без увеличения веса: {progressionSuggestion.targetSets} x{' '}
-                    {progressionSuggestion.targetReps}, RIR{' '}
-                    {progressionSuggestion.targetRir}
+                    {progressionSuggestion.targetReps}, RIR {progressionSuggestion.targetRir}
                   </p>
                   {currentVariant ? (
                     <p>
-                      Цепочка сложности: {currentVariant.label} • шаг{' '}
-                      {currentVariant.level}
+                      Цепочка сложности: {currentVariant.label} • шаг {currentVariant.level}
                       {currentVariant.nextExerciseId
                         ? ' • следующий вариант откроется после достаточного прогресса'
                         : ' • это верхний вариант цепочки'}
@@ -530,8 +589,8 @@ export function TodayPage() {
             <div className="exercise-empty">
               <strong>Нагрузка пока не посчитана</strong>
               <p>
-                Отметь упражнения как выполненные, и приложение покажет, какие
-                мышцы получили больше всего объёма.
+                Отметь подходы, и приложение покажет, какие мышцы получили больше
+                всего объёма.
               </p>
             </div>
           )}
@@ -540,8 +599,7 @@ export function TodayPage() {
         <div className="recovery-panel">
           <h3 className="recovery-panel__title">Recovery Score 0-100</h3>
           <p className="recovery-panel__text">
-            Это внутренняя оценка приложения, а не медицинский показатель: после
-            нагрузки значение снижается, а со временем восстанавливается.
+            Это внутренняя оценка приложения, а не медицинский показатель.
           </p>
           <div className="recovery-panel__list">
             {recoveryScores.map((item) => (
@@ -562,8 +620,7 @@ export function TodayPage() {
         <div className="need-score-panel">
           <h3 className="need-score-panel__title">Muscle Need Score</h3>
           <p className="need-score-panel__text">
-            Показатель показывает, насколько сильно мышце нужна следующая
-            тренировка с учётом недавней нагрузки, восстановления и приоритета.
+            Показывает, какие мышцы сейчас сильнее нуждаются в работе.
           </p>
           <div className="need-score-panel__list">
             {needScores.map((item) => (
@@ -602,11 +659,11 @@ export function TodayPage() {
                   <strong>{plan.title}</strong>
                   <p>Дата: {plan.date}</p>
                   <p>Упражнений: {plan.entries.length}</p>
-                  {plan.entries.slice(0, 2).map((plannedEntry, index) => {
+                  {plan.entries.slice(0, 2).map((plannedEntry, planIndex) => {
                     const exercise = exerciseMap[plannedEntry.exerciseId]
 
                     return (
-                      <p key={`${plan.id}-${plannedEntry.exerciseId}-${index}`}>
+                      <p key={`${plan.id}-${plannedEntry.exerciseId}-${planIndex}`}>
                         {exercise?.name ?? plannedEntry.exerciseId}:{' '}
                         {plannedEntry.progressionHint ?? 'без подсказки'}
                       </p>
@@ -633,14 +690,15 @@ export function TodayPage() {
           <h3 className="workout-history__title">Последние сохранённые тренировки</h3>
           {history.length > 0 ? (
             <div className="workout-history__list">
-              {history.slice(0, 5).map((entry) => (
-                <article key={entry.id} className="workout-history-card">
-                  <strong>{entry.title}</strong>
-                  <p>Дата: {entry.date}</p>
-                  <p>Упражнений: {entry.entries.length}</p>
+              {history.slice(0, 5).map((historyEntry) => (
+                <article key={historyEntry.id} className="workout-history-card">
+                  <strong>{historyEntry.title}</strong>
+                  <p>Дата: {historyEntry.date}</p>
+                  <p>Упражнений: {historyEntry.entries.length}</p>
                   <p>
-                    Выполнено: {entry.entries.filter((item) => item.completed).length} из{' '}
-                    {entry.entries.length}
+                    Выполнено:{' '}
+                    {historyEntry.entries.filter((item) => item.completed).length} из{' '}
+                    {historyEntry.entries.length}
                   </p>
                 </article>
               ))}
@@ -648,10 +706,7 @@ export function TodayPage() {
           ) : (
             <div className="exercise-empty">
               <strong>История пока пуста</strong>
-              <p>
-                После сохранения тренировки она останется доступной и после
-                перезапуска приложения.
-              </p>
+              <p>После сохранения тренировка останется доступной и после перезапуска.</p>
             </div>
           )}
         </div>

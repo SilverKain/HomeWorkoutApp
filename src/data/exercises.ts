@@ -1,4 +1,10 @@
 import type { Exercise } from '../types/exercise.ts'
+import bentOverDumbbellRowImage from '../assets/exercises/bent-over-dumbbell-row.png'
+import bodyweightSquatPausedImage from '../assets/exercises/bodyweight-squat-paused.png'
+import bulgarianSplitSquatDumbbellsImage from '../assets/exercises/bulgarian-split-squat-dumbbells.png'
+import dumbbellLungesImage from '../assets/exercises/dumbbell-lunges.png'
+import oneArmDumbbellRowImage from '../assets/exercises/one-arm-dumbbell-row.png'
+import supermanHoldImage from '../assets/exercises/superman-hold.png'
 
 export const exercises: Exercise[] = [
   {
@@ -140,6 +146,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bodyweight-squat-paused',
+    imageSrc: bodyweightSquatPausedImage,
     name: 'Приседания с паузой',
     description: 'Приседания с короткой паузой в нижней точке.',
     equipment: 'Собственный вес',
@@ -318,6 +325,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'superman-hold',
+    imageSrc: supermanHoldImage,
     name: 'Супермен',
     description: 'Удержание рук и ног над полом лёжа на животе.',
     equipment: 'Собственный вес',
@@ -376,6 +384,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'one-arm-dumbbell-row',
+    imageSrc: oneArmDumbbellRowImage,
     name: 'Тяга гантели одной рукой',
     description: 'Тяга одной гантели в наклоне с опорой на свободную руку.',
     equipment: '1 гантель 1 кг',
@@ -392,6 +401,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bent-over-dumbbell-row',
+    imageSrc: bentOverDumbbellRowImage,
     name: 'Тяга двух гантелей в наклоне',
     description: 'Одновременная тяга двух гантелей в наклоне.',
     equipment: '2 гантели по 1 кг',
@@ -554,6 +564,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'dumbbell-lunges',
+    imageSrc: dumbbellLungesImage,
     name: 'Выпады с гантелями',
     description: 'Поочерёдные выпады с двумя гантелями в руках.',
     equipment: '2 гантели по 1 кг',
@@ -571,6 +582,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bulgarian-split-squat-dumbbells',
+    imageSrc: bulgarianSplitSquatDumbbellsImage,
     name: 'Болгарские выпады с гантелями',
     description: 'Болгарский сплит-присед с двумя лёгкими гантелями.',
     equipment: '2 гантели по 1 кг',

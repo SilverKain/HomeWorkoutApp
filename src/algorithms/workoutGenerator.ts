@@ -444,6 +444,7 @@ function createGeneratedEntry(
     reps: 10,
     rir: emphasisScore >= 80 ? 1 : emphasisScore >= 60 ? 2 : 3,
     completed: false,
+    completedSets: 0,
   }
   const suggestion = getProgressionSuggestion(
     exercise,

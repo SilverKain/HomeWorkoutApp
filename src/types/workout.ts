@@ -4,6 +4,7 @@ export interface WorkoutExerciseEntry {
   reps: number
   rir: number
   completed: boolean
+  completedSets?: number
   selectionScore?: number
   selectionReasons?: string[]
   progressionHint?: string
