@@ -45,9 +45,14 @@ export function getCalendarStatus(
     return 'idle'
   }
 
-  const hasWorkout = history.some((entry) => entry.date === isoDate)
+  const matchingEntries = history.filter((entry) => entry.date === isoDate)
+  const hasCompletedWorkout = matchingEntries.some(
+    (entry) =>
+      entry.entries.length > 0 &&
+      entry.entries.every((exerciseEntry) => exerciseEntry.completed),
+  )
 
-  if (hasWorkout) {
+  if (hasCompletedWorkout) {
     return 'completed'
   }
 

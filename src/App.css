@@ -1625,6 +1625,15 @@
   color: var(--color-text);
 }
 
+.exercise-search input,
+.exercise-muscle-select select,
+.exercise-muscle-select select option,
+.workout-number-field input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-border);
+  color: var(--color-heading);
+}
+
 .top-nav__item:hover,
 .exercise-filter-pill:hover,
 .workout-entry-card__remove:hover,
