@@ -1,4 +1,4 @@
-import type { Exercise } from '../types/exercise.ts'
+﻿import type { Exercise } from '../types/exercise.ts'
 import type { MuscleGroup } from '../types/muscles.ts'
 import type {
   PlannedWorkoutEntry,
@@ -257,7 +257,7 @@ function getHighLoadMuscleIds(exercise: Exercise) {
 }
 
 function getEquipmentGroup(exercise: Exercise) {
-  return exercise.equipment.includes('РіР°РЅС‚') ? 'dumbbell' : 'bodyweight'
+  return /\d/.test(exercise.equipment) ? 'dumbbell' : 'bodyweight'
 }
 
 function shouldReplaceWithAlternative(
@@ -649,3 +649,4 @@ export function generateWeeklyWorkoutPlans(
     }
   })
 }
+
