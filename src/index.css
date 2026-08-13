@@ -1,0 +1,62 @@
+:root {
+  font-family: 'Trebuchet MS', 'Segoe UI', Tahoma, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e8edf7;
+  background:
+    radial-gradient(circle at top, rgba(91, 146, 255, 0.2), transparent 30%),
+    linear-gradient(180deg, #07111f 0%, #0d1828 52%, #101d2d 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --color-text: #e8edf7;
+  --color-heading: #ffffff;
+  --color-muted: #97a8c1;
+  --color-accent: #ff8f48;
+  --color-accent-strong: #ffd166;
+  --color-surface: rgba(13, 24, 40, 0.88);
+  --color-surface-strong: rgba(17, 31, 52, 0.96);
+  --color-surface-soft: rgba(255, 255, 255, 0.04);
+  --color-border: rgba(151, 168, 193, 0.18);
+  --color-border-strong: rgba(255, 209, 102, 0.2);
+  --color-success: #58d68d;
+  --color-cool: #68b8ff;
+  --color-danger: #ff8b8b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at top, rgba(91, 146, 255, 0.2), transparent 30%),
+    linear-gradient(180deg, #07111f 0%, #0d1828 52%, #101d2d 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
