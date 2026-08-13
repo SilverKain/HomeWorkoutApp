@@ -2,9 +2,18 @@ import type { PlannedWorkoutEntry } from '../types/workout.ts'
 import { syncPlannedWorkoutsToFirebase } from './firebaseTrainingSync.ts'
 
 export const PLANNED_WORKOUTS_STORAGE_KEY = 'home-workout-plans'
+export const PLANNED_WORKOUTS_UPDATED_EVENT = 'planned-workouts-updated'
 
 function canUseLocalStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+}
+
+function notifyPlannedWorkoutsUpdated() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.dispatchEvent(new Event(PLANNED_WORKOUTS_UPDATED_EVENT))
 }
 
 export function loadPlannedWorkouts(): PlannedWorkoutEntry[] {
@@ -40,6 +49,7 @@ export function savePlannedWorkout(entry: PlannedWorkoutEntry) {
     JSON.stringify(nextEntries),
   )
   syncPlannedWorkoutsToFirebase(nextEntries)
+  notifyPlannedWorkoutsUpdated()
 
   return entry
 }
@@ -63,6 +73,7 @@ export function savePlannedWorkouts(entries: PlannedWorkoutEntry[]) {
     JSON.stringify(nextEntries),
   )
   syncPlannedWorkoutsToFirebase(nextEntries)
+  notifyPlannedWorkoutsUpdated()
 
   return entries
 }
@@ -78,6 +89,33 @@ export function removePlannedWorkoutByDate(date: string) {
     JSON.stringify(nextEntries),
   )
   syncPlannedWorkoutsToFirebase(nextEntries)
+  notifyPlannedWorkoutsUpdated()
+
+  return nextEntries
+}
+
+export function removePlannedWorkoutExercise(date: string, exerciseId: string) {
+  if (!canUseLocalStorage()) {
+    return []
+  }
+
+  const nextEntries = loadPlannedWorkouts().map((planned) => {
+    if (planned.date !== date) {
+      return planned
+    }
+
+    return {
+      ...planned,
+      entries: planned.entries.filter((entry) => entry.exerciseId !== exerciseId),
+    }
+  })
+
+  window.localStorage.setItem(
+    PLANNED_WORKOUTS_STORAGE_KEY,
+    JSON.stringify(nextEntries),
+  )
+  syncPlannedWorkoutsToFirebase(nextEntries)
+  notifyPlannedWorkoutsUpdated()
 
   return nextEntries
 }

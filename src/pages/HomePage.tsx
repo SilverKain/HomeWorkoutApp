@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { MetricBar } from '../components/MetricBar.tsx'
 import {
@@ -11,6 +11,7 @@ import {
 import { exercises, muscleGroups } from '../data/index.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import {
+  PLANNED_WORKOUTS_UPDATED_EVENT,
   loadPlannedWorkouts,
   savePlannedWorkouts,
 } from '../services/plannedWorkouts.ts'
@@ -104,6 +105,25 @@ export function HomePage({
   const [plannedWorkouts, setPlannedWorkouts] = useState(() => loadPlannedWorkouts())
   const [message, setMessage] = useState('')
   const [expandedReasonKey, setExpandedReasonKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handlePlannedWorkoutsUpdated = () => {
+      setPlannedWorkouts(loadPlannedWorkouts())
+      setHistory(loadWorkoutHistory())
+    }
+
+    window.addEventListener(
+      PLANNED_WORKOUTS_UPDATED_EVENT,
+      handlePlannedWorkoutsUpdated,
+    )
+
+    return () => {
+      window.removeEventListener(
+        PLANNED_WORKOUTS_UPDATED_EVENT,
+        handlePlannedWorkoutsUpdated,
+      )
+    }
+  }, [])
 
   const nextPlannedWorkout = useMemo(() => {
     return [...plannedWorkouts]

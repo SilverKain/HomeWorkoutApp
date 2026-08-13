@@ -5,7 +5,7 @@ export function createWorkoutEntry(exerciseId: string): WorkoutExerciseEntry {
   return {
     exerciseId,
     sets: 3,
-    reps: 12,
+    reps: 10,
     rir: 2,
     completed: false,
   }

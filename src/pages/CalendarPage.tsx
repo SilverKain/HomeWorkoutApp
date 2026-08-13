@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { exercises } from '../data/index.ts'
-import { loadPlannedWorkouts } from '../services/plannedWorkouts.ts'
+import {
+  PLANNED_WORKOUTS_UPDATED_EVENT,
+  loadPlannedWorkouts,
+  removePlannedWorkoutExercise,
+} from '../services/plannedWorkouts.ts'
 import { loadWorkoutHistory } from '../services/workoutHistory.ts'
 import {
   buildMonthCalendar,
@@ -59,7 +63,7 @@ function shiftMonth(year: number, monthIndex: number, direction: -1 | 1) {
 
 export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarPageProps) {
   const history = loadWorkoutHistory()
-  const plannedWorkouts = loadPlannedWorkouts()
+  const [plannedWorkouts, setPlannedWorkouts] = useState(() => loadPlannedWorkouts())
   const [visibleMonth, setVisibleMonth] = useState(() =>
     getMonthStateFromIsoDate(controlledSelectedDate),
   )
@@ -83,6 +87,24 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
       setVisibleMonth(getMonthStateFromIsoDate(controlledSelectedDate))
     }
   }, [controlledSelectedDate])
+
+  useEffect(() => {
+    const handlePlannedWorkoutsUpdated = () => {
+      setPlannedWorkouts(loadPlannedWorkouts())
+    }
+
+    window.addEventListener(
+      PLANNED_WORKOUTS_UPDATED_EVENT,
+      handlePlannedWorkoutsUpdated,
+    )
+
+    return () => {
+      window.removeEventListener(
+        PLANNED_WORKOUTS_UPDATED_EVENT,
+        handlePlannedWorkoutsUpdated,
+      )
+    }
+  }, [])
 
   useEffect(() => {
     const hasSelectedDayInVisibleMonth = days.some((day) => day.isoDate === selectedDate)
@@ -119,6 +141,11 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
 
   function goToNextMonth() {
     setVisibleMonth((current) => shiftMonth(current.year, current.monthIndex, 1))
+  }
+
+  function handleRemovePlannedExercise(exerciseId: string) {
+    const nextEntries = removePlannedWorkoutExercise(selectedDate, exerciseId)
+    setPlannedWorkouts(nextEntries)
   }
 
   return (
@@ -278,6 +305,13 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
                       <p>Повторения: {entry.reps}</p>
                       <p>RIR: {entry.rir}</p>
                       <p>Статус: запланировано</p>
+                      <button
+                        type="button"
+                        className="workout-entry-card__remove"
+                        onClick={() => handleRemovePlannedExercise(entry.exerciseId)}
+                      >
+                        Убрать упражнение
+                      </button>
                     </article>
                   )
                 })}

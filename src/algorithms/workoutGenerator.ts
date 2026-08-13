@@ -255,6 +255,10 @@ function getHighLoadMuscleIds(exercise: Exercise) {
     .map(([muscleId]) => muscleId)
 }
 
+function getEquipmentGroup(exercise: Exercise) {
+  return exercise.equipment.includes('РіР°РЅС‚') ? 'dumbbell' : 'bodyweight'
+}
+
 function shouldReplaceWithAlternative(
   exerciseId: string,
   effectivenessMap: Record<string, ReturnType<typeof calculateEffectivenessScores>[number] | undefined>,
@@ -283,6 +287,8 @@ function violatesDiversityRules(
   let samePatternCount = 0
   let samePrimaryMuscleCount = 0
   let similarMovementCount = 0
+  let sameEquipmentCount = 0
+  const candidateEquipmentGroup = getEquipmentGroup(candidate)
 
   for (const selected of selectedExercises) {
     const overlapScore = getMuscleOverlapScore(candidate, selected)
@@ -303,17 +309,26 @@ function violatesDiversityRules(
     if (sharedHighLoadMuscle && overlapScore >= 0.65) {
       similarMovementCount += 1
     }
+
+    if (getEquipmentGroup(selected) === candidateEquipmentGroup) {
+      sameEquipmentCount += 1
+    }
   }
 
   if (strict) {
     return (
       samePatternCount >= 1 ||
       samePrimaryMuscleCount >= 2 ||
-      similarMovementCount >= 2
+      similarMovementCount >= 2 ||
+      (candidateEquipmentGroup === 'dumbbell' && sameEquipmentCount >= 3)
     )
   }
 
-  return samePatternCount >= 2 || samePrimaryMuscleCount >= 3
+  return (
+    samePatternCount >= 2 ||
+    samePrimaryMuscleCount >= 3 ||
+    (candidateEquipmentGroup === 'dumbbell' && sameEquipmentCount >= 4)
+  )
 }
 
 function pickReplacementExercise(
@@ -421,14 +436,12 @@ function createGeneratedEntry(
   history: WorkoutHistoryEntry[],
   context: SelectionContext,
   emphasisScore: number,
-  slotIndex: number,
   selectionNote?: string,
 ): WorkoutExerciseEntry {
-  const roundedScore = Math.max(1, Math.round(emphasisScore / 20))
   const draftEntry: WorkoutExerciseEntry = {
     exerciseId: exercise.id,
-    sets: Math.min(5, 3 + Math.floor((roundedScore + slotIndex) / 2)),
-    reps: 10 + roundedScore * 2 - slotIndex,
+    sets: 3,
+    reps: 10,
     rir: emphasisScore >= 80 ? 1 : emphasisScore >= 60 ? 2 : 3,
     completed: false,
   }
@@ -480,7 +493,6 @@ function buildWorkoutEntriesForDate(
   history: WorkoutHistoryEntry[],
   usedExerciseIds: Set<string>,
   context: SelectionContext,
-  slotIndex: number,
 ) {
   const selectedExercises: Exercise[] = []
   const entries: WorkoutExerciseEntry[] = []
@@ -512,7 +524,6 @@ function buildWorkoutEntriesForDate(
         history,
         context,
         candidate.score,
-        slotIndex,
         resolved.selectionNote,
       ),
     )
@@ -540,7 +551,6 @@ function buildWorkoutEntriesForDate(
         history,
         context,
         candidate.score,
-        slotIndex,
       ),
     )
   }
@@ -617,7 +627,6 @@ export function generateWeeklyWorkoutPlans(
       history,
       usedExerciseIds,
       selectionContext,
-      slotIndex,
     )
 
     return {

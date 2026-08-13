@@ -11,6 +11,7 @@ import {
 } from '../algorithms/index.ts'
 import { exerciseVariantMap, exercises, muscleGroups } from '../data/index.ts'
 import {
+  PLANNED_WORKOUTS_UPDATED_EVENT,
   loadPlannedWorkouts,
   removePlannedWorkoutByDate,
   savePlannedWorkouts,
@@ -51,6 +52,24 @@ export function TodayPage() {
   const [saveMessage, setSaveMessage] = useState('')
   const [restExerciseId, setRestExerciseId] = useState<string | null>(null)
   const [restSecondsLeft, setRestSecondsLeft] = useState(0)
+
+  useEffect(() => {
+    const handlePlannedWorkoutsUpdated = () => {
+      setPlannedWorkouts(loadPlannedWorkouts())
+    }
+
+    window.addEventListener(
+      PLANNED_WORKOUTS_UPDATED_EVENT,
+      handlePlannedWorkoutsUpdated,
+    )
+
+    return () => {
+      window.removeEventListener(
+        PLANNED_WORKOUTS_UPDATED_EVENT,
+        handlePlannedWorkoutsUpdated,
+      )
+    }
+  }, [])
 
   useEffect(() => {
     if (restSecondsLeft <= 0) {
