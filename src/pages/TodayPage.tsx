@@ -49,10 +49,6 @@ function getCompletedSets(entry: WorkoutExerciseEntry) {
   return Math.min(entry.completedSets ?? (entry.completed ? entry.sets : 0), entry.sets)
 }
 
-function getReadableEffort(entry: WorkoutExerciseEntry) {
-  return getEffortSummary(entry)
-}
-
 function getRestProgressWidth(secondsLeft: number) {
   return Math.max(
     0,
@@ -184,11 +180,7 @@ export function TodayPage() {
     setExerciseToAdd(nextAvailable?.id ?? '')
   }
 
-  function updateSetEffort(
-    exerciseId: string,
-    setIndex: number,
-    effort: EffortLevel,
-  ) {
+  function updateSetEffort(exerciseId: string, setIndex: number, effort: EffortLevel) {
     updateEntry(exerciseId, (current) => {
       const nextSetEfforts = normalizeSetEfforts(current)
       nextSetEfforts[setIndex] = effort
@@ -257,7 +249,7 @@ export function TodayPage() {
     savePlannedWorkouts(nextPlans)
     setPlannedWorkouts(loadPlannedWorkouts())
     setSaveMessage(
-      `Сгенерирован недельный план. Дат: ${nextPlans.length}. Ближайшая тренировка: ${nextPlans[0]?.date ?? 'нет'}.`,
+      `Сгенерирован недельный план. Дней: ${nextPlans.length}. Ближайшая тренировка: ${nextPlans[0]?.date ?? 'нет'}.`,
     )
   }
 
@@ -297,8 +289,8 @@ export function TodayPage() {
       <div className="page-card__header">
         <h2 className="page-card__title">Сегодня</h2>
         <p className="page-card__text">
-          Здесь можно собрать тренировку, отмечать выполненные подходы и
-          автоматически отдыхать между ними.
+          Здесь можно собрать тренировку, отмечать выполненные подходы и оценивать их
+          понятной шкалой усилия.
         </p>
       </div>
 
@@ -314,8 +306,7 @@ export function TodayPage() {
         <article className="info-tile">
           <strong>Выполнено</strong>
           <p>
-            {completedCount} из {draft.entries.length} упражнений отмечены как
-            завершённые.
+            {completedCount} из {draft.entries.length} упражнений отмечены как завершённые.
           </p>
         </article>
         <article className="info-tile">
@@ -372,7 +363,6 @@ export function TodayPage() {
               value={exerciseToAdd}
               onChange={(event) => setExerciseToAdd(event.target.value)}
               disabled={availableExercises.length === 0}
-              style={{ color: '#111827', backgroundColor: '#fffdf9' }}
             >
               {availableExercises.length > 0 ? (
                 availableExercises.map((exercise) => (
@@ -414,6 +404,7 @@ export function TodayPage() {
             const currentVariant = exerciseVariantMap[exercise.id]
             const isRestActive = restExerciseId === entry.exerciseId && restSecondsLeft > 0
             const setEfforts = normalizeSetEfforts(entry)
+            const latestCompletedSetIndex = completedSets > 0 ? completedSets - 1 : null
 
             return (
               <article
@@ -423,11 +414,7 @@ export function TodayPage() {
                 }`}
               >
                 <div className="workout-entry-card__hero">
-                  <ExerciseVisual
-                    exercise={exercise}
-                    size="large"
-                    showOverlay={false}
-                  />
+                  <ExerciseVisual exercise={exercise} size="large" showOverlay={false} />
 
                   <div className="workout-entry-card__header">
                     <div>
@@ -437,9 +424,7 @@ export function TodayPage() {
                         </strong>
                         <span
                           className={`workout-entry-card__badge${
-                            entry.completed
-                              ? ' workout-entry-card__badge--completed'
-                              : ''
+                            entry.completed ? ' workout-entry-card__badge--completed' : ''
                           }`}
                         >
                           {entry.completed ? 'Выполнено' : 'В процессе'}
@@ -462,7 +447,7 @@ export function TodayPage() {
                   <div className="workout-entry-card__stat">
                     <strong>Текущая цель</strong>
                     <p>
-                      {entry.sets} x {entry.reps}, усилие {getReadableEffort(entry)}
+                      {entry.sets} x {entry.reps}, усилие {getEffortSummary(entry)}
                     </p>
                   </div>
                   <div className="workout-entry-card__stat">
@@ -497,31 +482,39 @@ export function TodayPage() {
                       )
                     })}
                   </div>
+
                   <div className="workout-effort-grid">
-                    {setEfforts.map((currentEffort, setIndex) => (
-                      <div
-                        key={`${entry.exerciseId}-effort-${setIndex + 1}`}
-                        className="workout-effort-row"
-                      >
+                    {latestCompletedSetIndex != null ? (
+                      <div className="workout-effort-row">
                         <span className="workout-effort-row__label">
-                          Подход {setIndex + 1}
+                          Оцени последний выполненный подход: {latestCompletedSetIndex + 1}
                         </span>
                         <div className="workout-effort-row__options">
                           {(['easy', 'medium', 'hard'] as EffortLevel[]).map((effort) => (
                             <button
-                              key={`${entry.exerciseId}-${setIndex + 1}-${effort}`}
+                              key={`${entry.exerciseId}-${latestCompletedSetIndex + 1}-${effort}`}
                               type="button"
                               className={`workout-effort-chip${
-                                currentEffort === effort ? ' workout-effort-chip--active' : ''
+                                setEfforts[latestCompletedSetIndex] === effort
+                                  ? ' workout-effort-chip--active'
+                                  : ''
                               }`}
-                              onClick={() => updateSetEffort(entry.exerciseId, setIndex, effort)}
+                              onClick={() =>
+                                updateSetEffort(entry.exerciseId, latestCompletedSetIndex, effort)
+                              }
                             >
                               {effortLabels[effort]}
                             </button>
                           ))}
                         </div>
                       </div>
-                    ))}
+                    ) : (
+                      <div className="workout-effort-row">
+                        <span className="workout-effort-row__label">
+                          Сначала заверши подход, потом оцени его как легко, средне или тяжело.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -540,17 +533,18 @@ export function TodayPage() {
                             getCompletedSets(current),
                             nextSets,
                           )
+                          const nextSetEfforts = getDefaultSetEfforts(nextSets)
 
                           return {
                             ...current,
                             sets: nextSets,
                             completedSets: nextCompletedSets,
                             completed: nextCompletedSets >= nextSets,
-                            setEfforts: getDefaultSetEfforts(nextSets),
+                            setEfforts: nextSetEfforts,
                             rir: getEntryAverageRir({
                               ...current,
                               sets: nextSets,
-                              setEfforts: getDefaultSetEfforts(nextSets),
+                              setEfforts: nextSetEfforts,
                             }),
                           }
                         })
@@ -573,7 +567,6 @@ export function TodayPage() {
                       }
                     />
                   </label>
-
                 </div>
 
                 <div className="workout-entry-card__actions">
@@ -648,10 +641,7 @@ export function TodayPage() {
           ) : (
             <div className="exercise-empty">
               <strong>Нагрузка пока не посчитана</strong>
-              <p>
-                Отметь подходы, и приложение покажет, какие мышцы получили больше
-                всего объёма.
-              </p>
+              <p>Отмечай подходы, и приложение покажет, какие мышцы получили больше объёма.</p>
             </div>
           )}
         </div>
@@ -756,8 +746,7 @@ export function TodayPage() {
                   <p>Дата: {historyEntry.date}</p>
                   <p>Упражнений: {historyEntry.entries.length}</p>
                   <p>
-                    Выполнено:{' '}
-                    {historyEntry.entries.filter((item) => item.completed).length} из{' '}
+                    Выполнено: {historyEntry.entries.filter((item) => item.completed).length} из{' '}
                     {historyEntry.entries.length}
                   </p>
                 </article>

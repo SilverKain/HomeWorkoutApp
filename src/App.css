@@ -207,14 +207,14 @@
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid rgba(123, 86, 50, 0.18);
-  background: #fffdf9;
-  color: #1f2937;
+  background: rgba(14, 26, 42, 0.92);
+  color: #f8fbff;
 }
 
 .exercise-muscle-select select,
 .exercise-muscle-select select option {
-  background: #fffdf9;
-  color: #1f2937;
+  background: #112033;
+  color: #f8fbff;
 }
 
 .exercise-search input:focus,
@@ -573,14 +573,14 @@
   gap: 8px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(255, 248, 239, 0.84);
-  border: 1px solid rgba(123, 86, 50, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .workout-effort-row__label {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #6b4420;
+  color: var(--color-text);
 }
 
 .workout-effort-row__options {
@@ -2349,14 +2349,14 @@
   }
 
   .exercise-muscle-select select {
-    background: #f9fafb;
-    color: #111827;
-    border-color: rgba(123, 86, 50, 0.24);
+    background: rgba(14, 26, 42, 0.92);
+    color: #f8fbff;
+    border-color: rgba(255, 209, 102, 0.24);
   }
 
   .exercise-muscle-select select option {
-    background: #ffffff;
-    color: #111827;
+    background: #112033;
+    color: #f8fbff;
   }
 
   .exercise-visual {
