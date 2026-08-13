@@ -2,6 +2,7 @@ import { calculateEffectivenessScores } from '../algorithms/index.ts'
 import { exercises, muscleGroups } from '../data/index.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import { loadWorkoutHistory } from '../services/workoutHistory.ts'
+import { getEffortSummary } from '../utils/effort.ts'
 import { getTodayIsoDate } from '../utils/today.ts'
 
 const TODAY_DATE = getTodayIsoDate()
@@ -10,7 +11,7 @@ interface ExerciseHistoryPoint {
   date: string
   reps: number
   sets: number
-  rir: number
+  effortSummary: string
 }
 
 function buildExerciseHistoryMap() {
@@ -28,7 +29,7 @@ function buildExerciseHistoryMap() {
         date: workout.date,
         reps: entry.reps,
         sets: entry.sets,
-        rir: entry.rir,
+        effortSummary: getEffortSummary(entry),
       })
       map.set(entry.exerciseId, current)
     }
@@ -57,9 +58,8 @@ export function ProgressPage() {
       <div className="page-card__header">
         <h2 className="page-card__title">Прогресс</h2>
         <p className="page-card__text">
-          Здесь для каждого упражнения видна история выполнений, лучший результат,
-          последнее выполнение и текущий `Effectiveness Score`. Так проще понять,
-          где движение реально растёт, а где уже замедляется.
+          Здесь видно историю выполнений, лучший результат, последнее выполнение и текущую
+          оценку полезности упражнения.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export function ProgressPage() {
                 <p>
                   <strong>Последнее выполнение:</strong>{' '}
                   {lastPoint
-                    ? `${lastPoint.reps} повторений • ${lastPoint.sets} подхода • RIR ${lastPoint.rir} • ${lastPoint.date}`
+                    ? `${lastPoint.reps} повторений • ${lastPoint.sets} подхода • усилие ${lastPoint.effortSummary} • ${lastPoint.date}`
                     : 'ещё не было'}
                 </p>
               </div>
@@ -132,7 +132,7 @@ export function ProgressPage() {
               <div className="progress-score-card__metrics">
                 <p>Прогресс: {item.progressScore}</p>
                 <p>Качество подходов: {item.qualityScore}</p>
-                <p>RIR: {item.rirScore}</p>
+                <p>Оценка усилия: {item.rirScore}</p>
                 <p>Частота: {item.frequencyScore}</p>
                 <p>Потребность мышц: {item.muscleNeedScore}</p>
                 <p>Штраф за застой: {item.plateauPenalty}</p>

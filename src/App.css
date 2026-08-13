@@ -563,6 +563,50 @@
   margin-top: 18px;
 }
 
+.workout-effort-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.workout-effort-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 248, 239, 0.84);
+  border: 1px solid rgba(123, 86, 50, 0.1);
+}
+
+.workout-effort-row__label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #6b4420;
+}
+
+.workout-effort-row__options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workout-effort-chip {
+  min-height: 42px;
+  border: 1px solid rgba(171, 116, 54, 0.28);
+  border-radius: 999px;
+  background: #fff7ea;
+  color: #5a3510;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workout-effort-chip--active {
+  background: linear-gradient(135deg, #ffb366 0%, #ff8f48 100%);
+  border-color: rgba(255, 143, 72, 0.56);
+  color: #1f1206;
+  box-shadow: 0 10px 18px rgba(255, 143, 72, 0.18);
+}
+
 .workout-set-progress__chips {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));

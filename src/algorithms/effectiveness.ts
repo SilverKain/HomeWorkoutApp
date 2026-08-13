@@ -1,6 +1,7 @@
 import type { Exercise } from '../types/exercise.ts'
 import type { MuscleGroup } from '../types/muscles.ts'
 import type { WorkoutHistoryEntry } from '../types/workout.ts'
+import { getEntryAverageRir } from '../utils/effort.ts'
 import {
   calculateMuscleNeedScores,
   type MuscleNeedScoreItem,
@@ -77,8 +78,9 @@ function buildExerciseSamples(
         continue
       }
 
+      const resolvedRir = getEntryAverageRir(entry)
       const quality = clamp(
-        entry.sets * entry.reps * (1 + (4 - clamp(entry.rir, 0, 4)) * 0.08),
+        entry.sets * entry.reps * (1 + (4 - clamp(resolvedRir, 0, 4)) * 0.08),
         0,
         500,
       )
@@ -86,7 +88,7 @@ function buildExerciseSamples(
         date: workout.date,
         reps: entry.reps,
         sets: entry.sets,
-        rir: entry.rir,
+        rir: resolvedRir,
         quality,
         volume: entry.sets * entry.reps,
       }
@@ -390,9 +392,9 @@ function buildReasons(
   }
 
   if (metrics.rirScore >= 72) {
-    reasons.push('RIR близок к рабочему диапазону')
+    reasons.push('усилие близко к рабочему диапазону')
   } else if (metrics.rirScore <= 48) {
-    reasons.push('RIR часто слишком далёк от эффективного диапазона')
+    reasons.push('усилие часто слишком далеко от эффективного диапазона')
   }
 
   if (metrics.frequencyScore >= 82) {

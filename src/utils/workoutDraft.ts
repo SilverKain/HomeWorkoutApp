@@ -1,5 +1,6 @@
 import type { Exercise } from '../types/exercise.ts'
 import type { WorkoutDraft, WorkoutExerciseEntry } from '../types/workout.ts'
+import { getDefaultSetEfforts } from './effort.ts'
 
 export function createWorkoutEntry(exerciseId: string): WorkoutExerciseEntry {
   return {
@@ -9,6 +10,7 @@ export function createWorkoutEntry(exerciseId: string): WorkoutExerciseEntry {
     rir: 2,
     completed: false,
     completedSets: 0,
+    setEfforts: getDefaultSetEfforts(3),
   }
 }
 

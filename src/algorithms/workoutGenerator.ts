@@ -8,6 +8,7 @@ import type {
 import { calculateEffectivenessScores } from './effectiveness.ts'
 import { calculateMuscleNeedScores } from './needScore.ts'
 import { getProgressionSuggestion } from './progression.ts'
+import { getDefaultSetEfforts, getEffortLevelFromRir } from '../utils/effort.ts'
 
 const TRAINING_DAY_INDEXES = new Set([1, 3, 5])
 const MIN_EXERCISES_PER_WORKOUT = 5
@@ -445,6 +446,10 @@ function createGeneratedEntry(
     rir: emphasisScore >= 80 ? 1 : emphasisScore >= 60 ? 2 : 3,
     completed: false,
     completedSets: 0,
+    setEfforts: getDefaultSetEfforts(
+      3,
+      getEffortLevelFromRir(emphasisScore >= 80 ? 1 : emphasisScore >= 60 ? 2 : 3),
+    ),
   }
   const suggestion = getProgressionSuggestion(
     exercise,
@@ -480,6 +485,10 @@ function createGeneratedEntry(
     sets: resolvedSuggestion.targetSets,
     reps: resolvedSuggestion.targetReps,
     rir: resolvedSuggestion.targetRir,
+    setEfforts: getDefaultSetEfforts(
+      resolvedSuggestion.targetSets,
+      getEffortLevelFromRir(resolvedSuggestion.targetRir),
+    ),
     selectionScore,
     selectionReasons,
     progressionHint: selectionNote

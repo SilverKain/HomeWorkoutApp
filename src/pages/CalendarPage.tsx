@@ -15,6 +15,7 @@ import {
   formatCalendarDate,
   formatMonthTitle,
 } from '../utils/calendar.ts'
+import { getEffortSummary } from '../utils/effort.ts'
 import { getTodayDate, getTodayDateLabel, getTodayIsoDate } from '../utils/today.ts'
 
 const TODAY_ISO = getTodayIsoDate()
@@ -297,7 +298,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
                         <strong>{exercise?.name ?? entry.exerciseId}</strong>
                         <p>Подходы: {entry.sets}</p>
                         <p>Повторения: {entry.reps}</p>
-                        <p>RIR: {entry.rir}</p>
+                        <p>Усилие: {getEffortSummary(entry)}</p>
                         <p>Статус: {entry.completed ? 'выполнено' : 'не выполнено'}</p>
                         <button
                           type="button"
@@ -328,7 +329,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
                         <strong>{exercise?.name ?? entry.exerciseId}</strong>
                         <p>Подходы: {entry.sets}</p>
                         <p>Повторения: {entry.reps}</p>
-                        <p>RIR: {entry.rir}</p>
+                        <p>Усилие: {getEffortSummary(entry)}</p>
                         <p>Статус: запланировано</p>
                         <button
                           type="button"

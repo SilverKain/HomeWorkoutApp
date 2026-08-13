@@ -1,6 +1,7 @@
 import type { Exercise } from '../types/exercise.ts'
 import type { MuscleGroup } from '../types/muscles.ts'
 import type { WorkoutExerciseEntry } from '../types/workout.ts'
+import { getEntryAverageRir } from '../utils/effort.ts'
 
 export type MuscleLoadMap = Partial<Record<MuscleGroup['id'], number>>
 
@@ -35,7 +36,10 @@ export function calculateWorkoutMuscleLoad(
     }
 
     const volumeScore =
-      entry.sets * entry.reps * getRirIntensityFactor(entry.rir) * exercise.baseEffectiveness
+      entry.sets *
+      entry.reps *
+      getRirIntensityFactor(getEntryAverageRir(entry)) *
+      exercise.baseEffectiveness
 
     Object.entries(exercise.muscles).forEach(([muscleId, coefficient]) => {
       const safeCoefficient = coefficient ?? 0

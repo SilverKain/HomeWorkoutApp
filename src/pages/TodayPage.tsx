@@ -22,10 +22,18 @@ import {
 } from '../services/workoutHistory.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import type {
+  EffortLevel,
   PlannedWorkoutEntry,
   WorkoutExerciseEntry,
   WorkoutHistoryEntry,
 } from '../types/workout.ts'
+import {
+  effortLabels,
+  getDefaultSetEfforts,
+  getEffortSummary,
+  getEntryAverageRir,
+  normalizeSetEfforts,
+} from '../utils/effort.ts'
 import { getTodayIsoDate } from '../utils/today.ts'
 import { createWorkoutDraft, createWorkoutEntry } from '../utils/workoutDraft.ts'
 
@@ -39,6 +47,10 @@ function formatRestSeconds(value: number) {
 
 function getCompletedSets(entry: WorkoutExerciseEntry) {
   return Math.min(entry.completedSets ?? (entry.completed ? entry.sets : 0), entry.sets)
+}
+
+function getReadableEffort(entry: WorkoutExerciseEntry) {
+  return getEffortSummary(entry)
 }
 
 function getRestProgressWidth(secondsLeft: number) {
@@ -170,6 +182,26 @@ export function TodayPage() {
       (exercise) => exercise.id !== exerciseToAdd,
     )
     setExerciseToAdd(nextAvailable?.id ?? '')
+  }
+
+  function updateSetEffort(
+    exerciseId: string,
+    setIndex: number,
+    effort: EffortLevel,
+  ) {
+    updateEntry(exerciseId, (current) => {
+      const nextSetEfforts = normalizeSetEfforts(current)
+      nextSetEfforts[setIndex] = effort
+
+      return {
+        ...current,
+        setEfforts: nextSetEfforts,
+        rir: getEntryAverageRir({
+          ...current,
+          setEfforts: nextSetEfforts,
+        }),
+      }
+    })
   }
 
   function updateCompletedSets(exerciseId: string, nextCompletedSets: number) {
@@ -340,6 +372,7 @@ export function TodayPage() {
               value={exerciseToAdd}
               onChange={(event) => setExerciseToAdd(event.target.value)}
               disabled={availableExercises.length === 0}
+              style={{ color: '#111827', backgroundColor: '#fffdf9' }}
             >
               {availableExercises.length > 0 ? (
                 availableExercises.map((exercise) => (
@@ -380,6 +413,7 @@ export function TodayPage() {
             )
             const currentVariant = exerciseVariantMap[exercise.id]
             const isRestActive = restExerciseId === entry.exerciseId && restSecondsLeft > 0
+            const setEfforts = normalizeSetEfforts(entry)
 
             return (
               <article
@@ -428,7 +462,7 @@ export function TodayPage() {
                   <div className="workout-entry-card__stat">
                     <strong>Текущая цель</strong>
                     <p>
-                      {entry.sets} x {entry.reps}, RIR {entry.rir}
+                      {entry.sets} x {entry.reps}, усилие {getReadableEffort(entry)}
                     </p>
                   </div>
                   <div className="workout-entry-card__stat">
@@ -463,6 +497,32 @@ export function TodayPage() {
                       )
                     })}
                   </div>
+                  <div className="workout-effort-grid">
+                    {setEfforts.map((currentEffort, setIndex) => (
+                      <div
+                        key={`${entry.exerciseId}-effort-${setIndex + 1}`}
+                        className="workout-effort-row"
+                      >
+                        <span className="workout-effort-row__label">
+                          Подход {setIndex + 1}
+                        </span>
+                        <div className="workout-effort-row__options">
+                          {(['easy', 'medium', 'hard'] as EffortLevel[]).map((effort) => (
+                            <button
+                              key={`${entry.exerciseId}-${setIndex + 1}-${effort}`}
+                              type="button"
+                              className={`workout-effort-chip${
+                                currentEffort === effort ? ' workout-effort-chip--active' : ''
+                              }`}
+                              onClick={() => updateSetEffort(entry.exerciseId, setIndex, effort)}
+                            >
+                              {effortLabels[effort]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="workout-entry-card__fields">
@@ -486,6 +546,12 @@ export function TodayPage() {
                             sets: nextSets,
                             completedSets: nextCompletedSets,
                             completed: nextCompletedSets >= nextSets,
+                            setEfforts: getDefaultSetEfforts(nextSets),
+                            rir: getEntryAverageRir({
+                              ...current,
+                              sets: nextSets,
+                              setEfforts: getDefaultSetEfforts(nextSets),
+                            }),
                           }
                         })
                       }
@@ -508,21 +574,6 @@ export function TodayPage() {
                     />
                   </label>
 
-                  <label className="workout-number-field">
-                    <span>RIR</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      value={entry.rir}
-                      onChange={(event) =>
-                        updateEntry(entry.exerciseId, (current) => ({
-                          ...current,
-                          rir: Math.max(0, Number(event.target.value) || 0),
-                        }))
-                      }
-                    />
-                  </label>
                 </div>
 
                 <div className="workout-entry-card__actions">
@@ -556,7 +607,12 @@ export function TodayPage() {
                   <p>{progressionSuggestion.description}</p>
                   <p>
                     Цель без увеличения веса: {progressionSuggestion.targetSets} x{' '}
-                    {progressionSuggestion.targetReps}, RIR {progressionSuggestion.targetRir}
+                    {progressionSuggestion.targetReps}, ориентир по усилию{' '}
+                    {progressionSuggestion.targetRir <= 1
+                      ? 'тяжело'
+                      : progressionSuggestion.targetRir <= 2
+                        ? 'средне'
+                        : 'легко'}
                   </p>
                   {currentVariant ? (
                     <p>

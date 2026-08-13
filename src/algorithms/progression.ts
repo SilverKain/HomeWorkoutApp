@@ -1,11 +1,12 @@
 import type { Exercise } from '../types/exercise.ts'
 import { exerciseVariantMap } from '../data/exerciseVariants.ts'
 import type { WorkoutExerciseEntry, WorkoutHistoryEntry } from '../types/workout.ts'
+import { getEntryAverageRir } from '../utils/effort.ts'
 
 export type ProgressionMethod =
   | 'reps'
   | 'sets'
-  | 'rir'
+  | 'effort'
   | 'tempo'
   | 'pause'
   | 'range'
@@ -61,7 +62,7 @@ function getExerciseSamples(
       samples.push({
         sets: entry.sets,
         reps: entry.reps,
-        rir: entry.rir,
+        rir: getEntryAverageRir(entry),
       })
     }
   }
@@ -149,7 +150,7 @@ function buildSuggestion(
         'Следующий прогресс лучше делать через 1-2 дополнительных повторения в том же упражнении.',
       targetSets: current.sets,
       targetReps: clamp(current.reps + 1, 1, 20),
-      targetRir: current.rir,
+      targetRir: getEntryAverageRir(current),
       nextExerciseId,
     }
   }
@@ -162,20 +163,20 @@ function buildSuggestion(
         'Повторения уже хорошие, поэтому следующий шаг лучше сделать через ещё один рабочий подход.',
       targetSets: clamp(current.sets + 1, 1, 4),
       targetReps: current.reps,
-      targetRir: current.rir,
+      targetRir: getEntryAverageRir(current),
       nextExerciseId,
     }
   }
 
-  if (method === 'rir') {
+  if (method === 'effort') {
     return {
       method,
-      label: 'Снизить RIR',
+      label: 'Сделать подходы тяжелее',
       description:
-        'Можно оставить те же повторения и выполнить упражнение ближе к рабочему усилию.',
+        'Можно оставить те же повторения и постепенно сместить усилие от лёгкого к более рабочему и тяжёлому.',
       targetSets: current.sets,
       targetReps: current.reps,
-      targetRir: clamp(current.rir - 1, 0, 5),
+      targetRir: clamp(getEntryAverageRir(current) - 1, 0, 5),
       nextExerciseId,
     }
   }
@@ -188,7 +189,7 @@ function buildSuggestion(
         'Следующий прогресс лучше сделать через более медленное и контролируемое выполнение.',
       targetSets: current.sets,
       targetReps: current.reps,
-      targetRir: current.rir,
+      targetRir: getEntryAverageRir(current),
       nextExerciseId,
     }
   }
@@ -201,7 +202,7 @@ function buildSuggestion(
         'Попробуй короткую паузу в самой сложной точке, чтобы усложнить движение без смены упражнения.',
       targetSets: current.sets,
       targetReps: current.reps,
-      targetRir: current.rir,
+      targetRir: getEntryAverageRir(current),
       nextExerciseId,
     }
   }
@@ -214,7 +215,7 @@ function buildSuggestion(
         'Если движение остаётся безопасным, следующий прогресс можно получить через чуть большую амплитуду.',
       targetSets: current.sets,
       targetReps: current.reps,
-      targetRir: current.rir,
+      targetRir: getEntryAverageRir(current),
       nextExerciseId,
     }
   }
@@ -227,7 +228,7 @@ function buildSuggestion(
         'Сложность можно поднять через работу по одной стороне.',
       targetSets: current.sets,
       targetReps: clamp(current.reps - 2, 6, 20),
-      targetRir: current.rir,
+      targetRir: getEntryAverageRir(current),
       nextExerciseId,
     }
   }
@@ -243,7 +244,7 @@ function buildSuggestion(
         : 'Следующий прогресс лучше делать через более сложную вариацию упражнения.',
     targetSets: current.sets,
     targetReps: clamp(current.reps - 2, 6, 20),
-    targetRir: current.rir,
+    targetRir: getEntryAverageRir(current),
     nextExerciseId,
   }
 }
@@ -270,7 +271,7 @@ export function getProgressionSuggestion(
   }
 
   if (averageRir >= 3.5) {
-    return buildSuggestion('rir', current)
+    return buildSuggestion('effort', current)
   }
 
   if (plateau.isPlateau) {

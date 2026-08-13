@@ -1,3 +1,5 @@
+export type EffortLevel = 'easy' | 'medium' | 'hard'
+
 export interface WorkoutExerciseEntry {
   exerciseId: string
   sets: number
@@ -5,13 +7,14 @@ export interface WorkoutExerciseEntry {
   rir: number
   completed: boolean
   completedSets?: number
+  setEfforts?: EffortLevel[]
   selectionScore?: number
   selectionReasons?: string[]
   progressionHint?: string
   progressionMethod?:
     | 'reps'
     | 'sets'
-    | 'rir'
+    | 'effort'
     | 'tempo'
     | 'pause'
     | 'range'
