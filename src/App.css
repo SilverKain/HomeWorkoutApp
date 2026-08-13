@@ -208,12 +208,13 @@
   border-radius: 16px;
   border: 1px solid rgba(123, 86, 50, 0.18);
   background: #fffdf9;
-  color: var(--color-text);
+  color: #1f2937;
 }
 
 .exercise-muscle-select select,
 .exercise-muscle-select select option {
-  color: var(--color-heading);
+  background: #fffdf9;
+  color: #1f2937;
 }
 
 .exercise-search input:focus,
@@ -990,10 +991,19 @@
 }
 
 .calendar-details-exercise {
+  display: grid;
+  grid-template-columns: minmax(120px, 144px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
   padding: 14px 16px;
   border-radius: 18px;
   background: #fff8ef;
   border: 1px solid rgba(123, 86, 50, 0.1);
+}
+
+.calendar-details-exercise__content {
+  display: grid;
+  gap: 4px;
 }
 
 .calendar-details-exercise strong {
@@ -1880,6 +1890,14 @@
   flex-shrink: 0;
 }
 
+.exercise-visual--large {
+  min-height: 172px;
+  min-width: 184px;
+  width: 184px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
 .exercise-visual__image,
 .exercise-visual__placeholder {
   width: 100%;
@@ -2305,6 +2323,16 @@
     width: 100%;
     min-width: 0;
     min-height: 132px;
+  }
+
+  .exercise-visual--large {
+    width: 100%;
+    min-width: 0;
+    min-height: 188px;
+  }
+
+  .calendar-details-exercise {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .workout-entry-card__remove,

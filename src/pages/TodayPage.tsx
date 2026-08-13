@@ -389,7 +389,11 @@ export function TodayPage() {
                 }`}
               >
                 <div className="workout-entry-card__hero">
-                  <ExerciseVisual exercise={exercise} compact />
+                  <ExerciseVisual
+                    exercise={exercise}
+                    size="large"
+                    showOverlay={false}
+                  />
 
                   <div className="workout-entry-card__header">
                     <div>

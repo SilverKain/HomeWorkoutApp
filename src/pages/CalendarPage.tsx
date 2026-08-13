@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ExerciseVisual } from '../components/ExerciseVisual.tsx'
 import { exercises } from '../data/index.ts'
 import {
   PLANNED_WORKOUTS_UPDATED_EVENT,
   loadPlannedWorkouts,
   removePlannedWorkoutExercise,
 } from '../services/plannedWorkouts.ts'
-import { loadWorkoutHistory } from '../services/workoutHistory.ts'
+import {
+  loadWorkoutHistory,
+  removeWorkoutHistoryExercise,
+} from '../services/workoutHistory.ts'
 import {
   buildMonthCalendar,
   formatCalendarDate,
@@ -62,7 +66,7 @@ function shiftMonth(year: number, monthIndex: number, direction: -1 | 1) {
 }
 
 export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarPageProps) {
-  const history = loadWorkoutHistory()
+  const [history, setHistory] = useState(() => loadWorkoutHistory())
   const [plannedWorkouts, setPlannedWorkouts] = useState(() => loadPlannedWorkouts())
   const [visibleMonth, setVisibleMonth] = useState(() =>
     getMonthStateFromIsoDate(controlledSelectedDate),
@@ -91,6 +95,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
   useEffect(() => {
     const handlePlannedWorkoutsUpdated = () => {
       setPlannedWorkouts(loadPlannedWorkouts())
+      setHistory(loadWorkoutHistory())
     }
 
     window.addEventListener(
@@ -148,13 +153,17 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
     setPlannedWorkouts(nextEntries)
   }
 
+  function handleRemoveHistoryExercise(exerciseId: string) {
+    const nextHistory = removeWorkoutHistoryExercise(selectedDate, exerciseId)
+    setHistory(nextHistory)
+  }
+
   return (
     <section className="page-card">
       <div className="page-card__header">
         <h2 className="page-card__title">Календарь</h2>
         <p className="page-card__text">
-          Просматривай тренировки по месяцам и переходи между датами вперёд и
-          назад.
+          Просматривай тренировки по месяцам и быстро открывай детали по каждой дате.
         </p>
       </div>
 
@@ -281,11 +290,23 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
                       key={`${selectedHistoryEntry.id}-${entry.exerciseId}-${index}`}
                       className="calendar-details-exercise"
                     >
-                      <strong>{exercise?.name ?? entry.exerciseId}</strong>
-                      <p>Подходы: {entry.sets}</p>
-                      <p>Повторения: {entry.reps}</p>
-                      <p>RIR: {entry.rir}</p>
-                      <p>Статус: {entry.completed ? 'выполнено' : 'не выполнено'}</p>
+                      {exercise ? (
+                        <ExerciseVisual exercise={exercise} size="compact" showOverlay={false} />
+                      ) : null}
+                      <div className="calendar-details-exercise__content">
+                        <strong>{exercise?.name ?? entry.exerciseId}</strong>
+                        <p>Подходы: {entry.sets}</p>
+                        <p>Повторения: {entry.reps}</p>
+                        <p>RIR: {entry.rir}</p>
+                        <p>Статус: {entry.completed ? 'выполнено' : 'не выполнено'}</p>
+                        <button
+                          type="button"
+                          className="workout-entry-card__remove"
+                          onClick={() => handleRemoveHistoryExercise(entry.exerciseId)}
+                        >
+                          Убрать упражнение
+                        </button>
+                      </div>
                     </article>
                   )
                 })}
@@ -300,18 +321,23 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
                       key={`${selectedPlannedEntry.id}-${entry.exerciseId}-${index}`}
                       className="calendar-details-exercise"
                     >
-                      <strong>{exercise?.name ?? entry.exerciseId}</strong>
-                      <p>Подходы: {entry.sets}</p>
-                      <p>Повторения: {entry.reps}</p>
-                      <p>RIR: {entry.rir}</p>
-                      <p>Статус: запланировано</p>
-                      <button
-                        type="button"
-                        className="workout-entry-card__remove"
-                        onClick={() => handleRemovePlannedExercise(entry.exerciseId)}
-                      >
-                        Убрать упражнение
-                      </button>
+                      {exercise ? (
+                        <ExerciseVisual exercise={exercise} size="compact" showOverlay={false} />
+                      ) : null}
+                      <div className="calendar-details-exercise__content">
+                        <strong>{exercise?.name ?? entry.exerciseId}</strong>
+                        <p>Подходы: {entry.sets}</p>
+                        <p>Повторения: {entry.reps}</p>
+                        <p>RIR: {entry.rir}</p>
+                        <p>Статус: запланировано</p>
+                        <button
+                          type="button"
+                          className="workout-entry-card__remove"
+                          onClick={() => handleRemovePlannedExercise(entry.exerciseId)}
+                        >
+                          Убрать упражнение
+                        </button>
+                      </div>
                     </article>
                   )
                 })}
@@ -320,8 +346,8 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
               <div className="exercise-empty">
                 <strong>Тренировка пока не сохранена</strong>
                 <p>
-                  После сохранения тренировки здесь появятся упражнения, подходы,
-                  повторения, RIR и статус выполнения.
+                  После сохранения тренировки здесь появятся упражнения, подходы, повторения и
+                  статус выполнения.
                 </p>
               </div>
             ) : (

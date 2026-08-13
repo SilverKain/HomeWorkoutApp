@@ -51,3 +51,31 @@ export function saveWorkoutHistoryEntry(
 
   return historyEntry
 }
+
+export function removeWorkoutHistoryExercise(date: string, exerciseId: string) {
+  if (!canUseLocalStorage()) {
+    return []
+  }
+
+  const currentHistory = loadWorkoutHistory()
+  const nextHistory = currentHistory
+    .map((entry) => {
+      if (entry.date !== date) {
+        return entry
+      }
+
+      return {
+        ...entry,
+        entries: entry.entries.filter((item) => item.exerciseId !== exerciseId),
+      }
+    })
+    .filter((entry) => entry.entries.length > 0)
+
+  window.localStorage.setItem(
+    WORKOUT_HISTORY_STORAGE_KEY,
+    JSON.stringify(nextHistory),
+  )
+  syncWorkoutHistoryToFirebase(nextHistory)
+
+  return nextHistory
+}
