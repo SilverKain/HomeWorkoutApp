@@ -98,16 +98,16 @@ function analyzePlateau(samples: ExerciseSample[]): PlateauAnalysis {
 }
 
 function hasSufficientProgressForHarderVariant(samples: ExerciseSample[]) {
-  if (samples.length < 3) {
+  if (samples.length < 4) {
     return false
   }
 
-  const recent = samples.slice(-3)
+  const recent = samples.slice(-4)
   const averageReps = average(recent.map((sample) => sample.reps))
   const averageRir = average(recent.map((sample) => sample.rir))
   const averageSets = average(recent.map((sample) => sample.sets))
 
-  return averageReps >= 16 && averageRir <= 2 && averageSets >= 3
+  return averageReps >= 15 && averageRir <= 1.5 && averageSets >= 3
 }
 
 function getNextVariantExerciseId(
@@ -148,7 +148,7 @@ function buildSuggestion(
       description:
         'Следующий прогресс лучше делать через 1-2 дополнительных повторения в том же упражнении.',
       targetSets: current.sets,
-      targetReps: clamp(current.reps + 2, 1, 30),
+      targetReps: clamp(current.reps + 1, 1, 20),
       targetRir: current.rir,
       nextExerciseId,
     }
@@ -160,7 +160,7 @@ function buildSuggestion(
       label: 'Добавить подход',
       description:
         'Повторения уже хорошие, поэтому следующий шаг лучше сделать через ещё один рабочий подход.',
-      targetSets: clamp(current.sets + 1, 1, 6),
+      targetSets: clamp(current.sets + 1, 1, 4),
       targetReps: current.reps,
       targetRir: current.rir,
       nextExerciseId,
@@ -255,7 +255,7 @@ export function getProgressionSuggestion(
   exerciseMap?: Record<string, Exercise>,
 ): ProgressionSuggestion {
   const samples = getExerciseSamples(history, exercise.id)
-  const recent = samples.slice(-4)
+  const recent = samples.slice(-5)
   const averageReps = average(recent.map((sample) => sample.reps))
   const averageSets = average(recent.map((sample) => sample.sets))
   const averageRir = average(recent.map((sample) => sample.rir))
@@ -269,7 +269,7 @@ export function getProgressionSuggestion(
     return buildSuggestion('reps', current)
   }
 
-  if (averageRir >= 3) {
+  if (averageRir >= 3.5) {
     return buildSuggestion('rir', current)
   }
 
@@ -277,7 +277,7 @@ export function getProgressionSuggestion(
     return buildSuggestion('pause', current)
   }
 
-  if (averageReps < 15) {
+  if (averageReps < 14) {
     return buildSuggestion('reps', current)
   }
 
@@ -290,11 +290,11 @@ export function getProgressionSuggestion(
     )
   }
 
-  if (averageReps >= 15 && averageSets < 4.5) {
+  if (averageReps >= 16 && averageSets < 4) {
     return buildSuggestion('sets', current)
   }
 
-  if (averageReps >= 18 && supportsTempo(exercise)) {
+  if (averageReps >= 17 && supportsTempo(exercise)) {
     return buildSuggestion('tempo', current)
   }
 
@@ -303,7 +303,7 @@ export function getProgressionSuggestion(
       exercise.movementType === 'Выпад' ||
       exercise.movementType === 'Наклон' ||
       exercise.movementType === 'Мост') &&
-    averageReps >= 16
+    averageReps >= 17
   ) {
     return buildSuggestion('range', current)
   }
@@ -314,7 +314,7 @@ export function getProgressionSuggestion(
       exercise.movementType === 'Сгибание' ||
       exercise.movementType === 'Разгибание' ||
       exercise.movementType === 'Мост') &&
-    averageReps >= 16
+    averageReps >= 17
   ) {
     return buildSuggestion('unilateral', current)
   }
