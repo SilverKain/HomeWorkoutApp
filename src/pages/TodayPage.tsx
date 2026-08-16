@@ -16,6 +16,7 @@ import {
   removePlannedWorkoutByDate,
   savePlannedWorkouts,
 } from '../services/plannedWorkouts.ts'
+import { FIREBASE_SYNC_EVENT } from '../services/firebaseTrainingSync.ts'
 import {
   loadWorkoutHistory,
   saveWorkoutHistoryEntry,
@@ -56,11 +57,38 @@ function getRestProgressWidth(secondsLeft: number) {
   )
 }
 
+function createDraftFromEntries(entries: WorkoutExerciseEntry[], title = 'Тренировка на сегодня') {
+  return {
+    title,
+    entries: entries.map((entry) => ({
+      ...entry,
+      completed: entry.completed ?? false,
+      completedSets: Math.min(entry.completedSets ?? (entry.completed ? entry.sets : 0), entry.sets),
+      setEfforts: normalizeSetEfforts(entry),
+    })),
+  }
+}
+
+function createTodayDraft(todayDate: string) {
+  const historyEntry = loadWorkoutHistory().find((entry) => entry.date === todayDate)
+
+  if (historyEntry) {
+    return createDraftFromEntries(historyEntry.entries, historyEntry.title)
+  }
+
+  const plannedEntry = loadPlannedWorkouts().find((entry) => entry.date === todayDate)
+
+  if (plannedEntry) {
+    return createDraftFromEntries(plannedEntry.entries, plannedEntry.title)
+  }
+
+  return createWorkoutDraft(exercises.slice(0, 4))
+}
+
 export function TodayPage() {
   const todayDate = getTodayIsoDate()
   const resolvedMuscleGroups = useMemo(() => resolveMuscleGroups(muscleGroups), [])
-  const starterExercises = useMemo(() => exercises.slice(0, 4), [])
-  const [draft, setDraft] = useState(() => createWorkoutDraft(starterExercises))
+  const [draft, setDraft] = useState(() => createTodayDraft(todayDate))
   const [exerciseToAdd, setExerciseToAdd] = useState(exercises[0]?.id ?? '')
   const [history, setHistory] = useState<WorkoutHistoryEntry[]>(() => loadWorkoutHistory())
   const [plannedWorkouts, setPlannedWorkouts] = useState<PlannedWorkoutEntry[]>(
@@ -71,22 +99,32 @@ export function TodayPage() {
   const [restSecondsLeft, setRestSecondsLeft] = useState(0)
 
   useEffect(() => {
-    const handlePlannedWorkoutsUpdated = () => {
+    const syncTodayState = () => {
+      setHistory(loadWorkoutHistory())
       setPlannedWorkouts(loadPlannedWorkouts())
+      setDraft(createTodayDraft(todayDate))
     }
 
     window.addEventListener(
       PLANNED_WORKOUTS_UPDATED_EVENT,
-      handlePlannedWorkoutsUpdated,
+      syncTodayState,
+    )
+    window.addEventListener(
+      FIREBASE_SYNC_EVENT,
+      syncTodayState,
     )
 
     return () => {
       window.removeEventListener(
         PLANNED_WORKOUTS_UPDATED_EVENT,
-        handlePlannedWorkoutsUpdated,
+        syncTodayState,
+      )
+      window.removeEventListener(
+        FIREBASE_SYNC_EVENT,
+        syncTodayState,
       )
     }
-  }, [])
+  }, [todayDate])
 
   useEffect(() => {
     if (restSecondsLeft <= 0) {

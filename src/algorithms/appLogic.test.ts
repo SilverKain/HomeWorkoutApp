@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { calculateEffectivenessScores } from './effectiveness.ts'
 import { generateWeeklyWorkoutPlans, getWeekTrainingDates } from './workoutGenerator.ts'
@@ -10,6 +10,15 @@ import { buildMonthCalendar } from '../utils/calendar.ts'
 import type { WorkoutHistoryEntry } from '../types/workout.ts'
 
 const TODAY = '2026-08-12'
+
+beforeAll(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date(`${TODAY}T12:00:00`))
+})
+
+afterAll(() => {
+  vi.useRealTimers()
+})
 const ALLOWED_EQUIPMENT = new Set([
   'Собственный вес',
   '2 гантели по 1 кг',
