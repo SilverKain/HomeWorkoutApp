@@ -62,6 +62,37 @@ export function saveWorkoutHistoryEntry(
   return historyEntry
 }
 
+export function upsertWorkoutHistoryEntry(
+  draft: Omit<WorkoutDraft, 'title'> & { title: string; date: string },
+) {
+  const currentHistory = loadWorkoutHistory()
+  const existingEntry = currentHistory.find((entry) => entry.date === draft.date)
+  const historyEntry: WorkoutHistoryEntry = {
+    id: existingEntry?.id ?? `${draft.date}-${Date.now()}`,
+    date: draft.date,
+    title: draft.title,
+    entries: draft.entries,
+  }
+
+  if (!canUseLocalStorage()) {
+    return draft.entries.length > 0 ? [historyEntry] : []
+  }
+
+  const nextHistory =
+    draft.entries.length > 0
+      ? [historyEntry, ...currentHistory.filter((entry) => entry.date !== draft.date)]
+      : currentHistory.filter((entry) => entry.date !== draft.date)
+
+  window.localStorage.setItem(
+    WORKOUT_HISTORY_STORAGE_KEY,
+    JSON.stringify(nextHistory),
+  )
+  syncWorkoutHistoryToFirebase(nextHistory)
+  notifyWorkoutHistoryUpdated()
+
+  return nextHistory
+}
+
 export function removeWorkoutHistoryExercise(date: string, exerciseId: string) {
   if (!canUseLocalStorage()) {
     return []

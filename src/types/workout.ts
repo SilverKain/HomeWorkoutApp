@@ -39,6 +39,6 @@ export interface PlannedWorkoutEntry {
   date: string
   title: string
   entries: WorkoutExerciseEntry[]
-  source: 'generator'
+  source: 'generator' | 'manual'
   weekKey?: string
 }

@@ -1,6 +1,7 @@
 export {
   loadWorkoutHistory,
   saveWorkoutHistoryEntry,
+  upsertWorkoutHistoryEntry,
   WORKOUT_HISTORY_STORAGE_KEY,
   WORKOUT_HISTORY_UPDATED_EVENT,
 } from './workoutHistory.ts'

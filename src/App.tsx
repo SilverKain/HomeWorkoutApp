@@ -22,7 +22,7 @@ import './App.css'
 
 function App() {
   const [activePage, setActivePage] = useState<NavigationId>('home')
-  const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => getTodayIsoDate())
+  const [selectedWorkoutDate, setSelectedWorkoutDate] = useState(() => getTodayIsoDate())
   const [syncVersion, setSyncVersion] = useState(0)
   const [firebaseUser, setFirebaseUser] = useState<User | null>(() => getCurrentFirebaseUser())
   const [syncStatus, setSyncStatus] = useState('Синхронизация подключается...')
@@ -59,7 +59,7 @@ function App() {
   }, [])
 
   function openCalendarDate(date: string) {
-    setCalendarSelectedDate(date)
+    setSelectedWorkoutDate(date)
     setActivePage('calendar')
   }
 
@@ -86,10 +86,16 @@ function App() {
         key={`home-${syncVersion}`}
       />
     ),
-    today: <TodayPage key={`today-${syncVersion}`} />,
+    today: (
+      <TodayPage
+        selectedDate={selectedWorkoutDate}
+        key={`today-${syncVersion}`}
+      />
+    ),
     calendar: (
       <CalendarPage
-        selectedDate={calendarSelectedDate}
+        selectedDate={selectedWorkoutDate}
+        onSelectDate={setSelectedWorkoutDate}
         key={`calendar-${syncVersion}`}
       />
     ),

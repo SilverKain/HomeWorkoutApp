@@ -16,12 +16,13 @@ import {
   removePlannedWorkoutByDate,
   removePlannedWorkoutExercise,
   savePlannedWorkouts,
+  upsertPlannedWorkoutEntry,
 } from '../services/plannedWorkouts.ts'
 import { FIREBASE_SYNC_EVENT } from '../services/firebaseTrainingSync.ts'
 import {
   loadWorkoutHistory,
   removeWorkoutHistoryExercise,
-  saveWorkoutHistoryEntry,
+  upsertWorkoutHistoryEntry,
   WORKOUT_HISTORY_UPDATED_EVENT,
 } from '../services/workoutHistory.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
@@ -72,14 +73,14 @@ function createDraftFromEntries(entries: WorkoutExerciseEntry[], title = 'Тре
   }
 }
 
-function createTodayDraft(todayDate: string) {
-  const historyEntry = loadWorkoutHistory().find((entry) => entry.date === todayDate)
+function createTodayDraft(selectedDate: string) {
+  const historyEntry = loadWorkoutHistory().find((entry) => entry.date === selectedDate)
 
   if (historyEntry) {
     return createDraftFromEntries(historyEntry.entries, historyEntry.title)
   }
 
-  const plannedEntry = loadPlannedWorkouts().find((entry) => entry.date === todayDate)
+  const plannedEntry = loadPlannedWorkouts().find((entry) => entry.date === selectedDate)
 
   if (plannedEntry) {
     return createDraftFromEntries(plannedEntry.entries, plannedEntry.title)
@@ -88,10 +89,15 @@ function createTodayDraft(todayDate: string) {
   return createWorkoutDraft(exercises.slice(0, 4))
 }
 
-export function TodayPage() {
+interface TodayPageProps {
+  selectedDate?: string
+}
+
+export function TodayPage({ selectedDate: controlledSelectedDate }: TodayPageProps) {
   const todayDate = getTodayIsoDate()
+  const selectedDate = controlledSelectedDate ?? todayDate
   const resolvedMuscleGroups = useMemo(() => resolveMuscleGroups(muscleGroups), [])
-  const [draft, setDraft] = useState(() => createTodayDraft(todayDate))
+  const [draft, setDraft] = useState(() => createTodayDraft(selectedDate))
   const [exerciseToAdd, setExerciseToAdd] = useState(exercises[0]?.id ?? '')
   const [history, setHistory] = useState<WorkoutHistoryEntry[]>(() => loadWorkoutHistory())
   const [plannedWorkouts, setPlannedWorkouts] = useState<PlannedWorkoutEntry[]>(
@@ -105,7 +111,7 @@ export function TodayPage() {
     const syncTodayState = () => {
       setHistory(loadWorkoutHistory())
       setPlannedWorkouts(loadPlannedWorkouts())
-      setDraft(createTodayDraft(todayDate))
+      setDraft(createTodayDraft(selectedDate))
     }
 
     window.addEventListener(
@@ -135,7 +141,7 @@ export function TodayPage() {
         syncTodayState,
       )
     }
-  }, [todayDate])
+  }, [selectedDate])
 
   useEffect(() => {
     if (restSecondsLeft <= 0) {
@@ -168,18 +174,18 @@ export function TodayPage() {
     history,
     exerciseMap,
     resolvedMuscleGroups,
-    todayDate,
+    selectedDate,
     draft.entries,
   ).slice(0, 6)
   const needScores = calculateMuscleNeedScores(
     history,
     exerciseMap,
     resolvedMuscleGroups,
-    todayDate,
+    selectedDate,
     draft.entries,
   ).slice(0, 6)
   const currentWeekPlans = plannedWorkouts
-    .filter((plan) => plan.date >= todayDate)
+    .filter((plan) => plan.date >= selectedDate)
     .sort((left, right) => left.date.localeCompare(right.date))
     .slice(0, 3)
 
@@ -188,34 +194,74 @@ export function TodayPage() {
   const completedExerciseNames = completedEntries
     .map((entry) => exerciseMap[entry.exerciseId]?.name ?? entry.exerciseId)
     .slice(0, 6)
-  const todayHistoryEntry = history.find((entry) => entry.date === todayDate)
-  const todayPlannedEntry = plannedWorkouts.find((entry) => entry.date === todayDate)
+  const selectedHistoryEntry = history.find((entry) => entry.date === selectedDate)
+  const selectedPlannedEntry = plannedWorkouts.find((entry) => entry.date === selectedDate)
+
+  function persistDraft(nextDraft: typeof draft) {
+    if (selectedHistoryEntry) {
+      const nextHistory = upsertWorkoutHistoryEntry({
+        date: selectedDate,
+        title: nextDraft.title,
+        entries: nextDraft.entries,
+      })
+      setHistory(nextHistory)
+      return
+    }
+
+    if (nextDraft.entries.length === 0) {
+      const nextPlans = removePlannedWorkoutByDate(selectedDate)
+      setPlannedWorkouts(nextPlans)
+      return
+    }
+
+    const nextPlans = upsertPlannedWorkoutEntry({
+      id: selectedPlannedEntry?.id ?? `planned-${selectedDate}`,
+      date: selectedDate,
+      title: nextDraft.title,
+      entries: nextDraft.entries,
+      source: selectedPlannedEntry?.source ?? 'manual',
+      weekKey: selectedPlannedEntry?.weekKey,
+    })
+    setPlannedWorkouts(nextPlans)
+  }
 
   function updateEntry(
     exerciseId: string,
     updater: (entry: WorkoutExerciseEntry) => WorkoutExerciseEntry,
   ) {
-    setDraft((currentDraft) => ({
-      ...currentDraft,
-      entries: currentDraft.entries.map((entry) =>
-        entry.exerciseId === exerciseId ? updater(entry) : entry,
-      ),
-    }))
+    setDraft((currentDraft) => {
+      const nextDraft = {
+        ...currentDraft,
+        entries: currentDraft.entries.map((entry) =>
+          entry.exerciseId === exerciseId ? updater(entry) : entry,
+        ),
+      }
+      persistDraft(nextDraft)
+      return nextDraft
+    })
   }
 
   function removeEntry(exerciseId: string) {
-    if (todayHistoryEntry) {
-      const nextHistory = removeWorkoutHistoryExercise(todayDate, exerciseId)
+    if (selectedHistoryEntry) {
+      const nextHistory = removeWorkoutHistoryExercise(selectedDate, exerciseId)
       setHistory(nextHistory)
-    } else if (todayPlannedEntry) {
-      const nextPlans = removePlannedWorkoutExercise(todayDate, exerciseId)
+    } else if (selectedPlannedEntry) {
+      const nextPlans = removePlannedWorkoutExercise(selectedDate, exerciseId)
       setPlannedWorkouts(nextPlans)
     }
 
-    setDraft((currentDraft) => ({
-      ...currentDraft,
-      entries: currentDraft.entries.filter((entry) => entry.exerciseId !== exerciseId),
-    }))
+    setDraft((currentDraft) => {
+      const nextDraft = {
+        ...currentDraft,
+        entries: currentDraft.entries.filter((entry) => entry.exerciseId !== exerciseId),
+      }
+
+      if (!selectedHistoryEntry && !selectedPlannedEntry) {
+        persistDraft(nextDraft)
+      }
+
+      return nextDraft
+    })
 
     if (restExerciseId === exerciseId) {
       setRestExerciseId(null)
@@ -228,10 +274,14 @@ export function TodayPage() {
       return
     }
 
-    setDraft((currentDraft) => ({
-      ...currentDraft,
-      entries: [...currentDraft.entries, createWorkoutEntry(exerciseToAdd)],
-    }))
+    setDraft((currentDraft) => {
+      const nextDraft = {
+        ...currentDraft,
+        entries: [...currentDraft.entries, createWorkoutEntry(exerciseToAdd)],
+      }
+      persistDraft(nextDraft)
+      return nextDraft
+    })
 
     const nextAvailable = availableExercises.find(
       (exercise) => exercise.id !== exerciseToAdd,
@@ -302,7 +352,7 @@ export function TodayPage() {
       exercises,
       resolvedMuscleGroups,
       history,
-      todayDate,
+      selectedDate,
     )
 
     savePlannedWorkouts(nextPlans)
@@ -318,28 +368,26 @@ export function TodayPage() {
       return
     }
 
-    const savedEntry = saveWorkoutHistoryEntry({
-      date: todayDate,
+    const nextHistory = upsertWorkoutHistoryEntry({
+      date: selectedDate,
       title: draft.title,
       entries: draft.entries,
     })
-
-    const nextHistory = [savedEntry, ...history]
     const recalculatedPlans = generateWeeklyWorkoutPlans(
       exercises,
       resolvedMuscleGroups,
       nextHistory,
-      todayDate,
+      selectedDate,
     )
 
-    removePlannedWorkoutByDate(todayDate)
+    removePlannedWorkoutByDate(selectedDate)
     savePlannedWorkouts(recalculatedPlans)
     setHistory(nextHistory)
     setPlannedWorkouts(loadPlannedWorkouts())
     setSaveMessage(
       recalculatedPlans.length > 0
         ? `Тренировка за ${todayDate} сохранена. План на ${recalculatedPlans[0].date} пересчитан по реальным результатам.`
-        : `Тренировка за ${todayDate} сохранена. Будущих тренировок на эту неделю уже не осталось.`,
+        : `Тренировка за ${selectedDate} сохранена. Будущих тренировок на эту неделю уже не осталось.`,
     )
   }
 
@@ -360,7 +408,7 @@ export function TodayPage() {
         </article>
         <article className="info-tile">
           <strong>Дата</strong>
-          <p>{todayDate}</p>
+          <p>{selectedDate}</p>
         </article>
         <article className="info-tile">
           <strong>Выполнено</strong>

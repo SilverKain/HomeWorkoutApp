@@ -78,6 +78,26 @@ export function savePlannedWorkouts(entries: PlannedWorkoutEntry[]) {
   return entries
 }
 
+export function upsertPlannedWorkoutEntry(entry: PlannedWorkoutEntry) {
+  if (!canUseLocalStorage()) {
+    return [entry]
+  }
+
+  const nextEntries = [
+    entry,
+    ...loadPlannedWorkouts().filter((planned) => planned.date !== entry.date),
+  ]
+
+  window.localStorage.setItem(
+    PLANNED_WORKOUTS_STORAGE_KEY,
+    JSON.stringify(nextEntries),
+  )
+  syncPlannedWorkoutsToFirebase(nextEntries)
+  notifyPlannedWorkoutsUpdated()
+
+  return nextEntries
+}
+
 export function removePlannedWorkoutByDate(date: string) {
   if (!canUseLocalStorage()) {
     return []
@@ -99,16 +119,18 @@ export function removePlannedWorkoutExercise(date: string, exerciseId: string) {
     return []
   }
 
-  const nextEntries = loadPlannedWorkouts().map((planned) => {
-    if (planned.date !== date) {
-      return planned
-    }
+  const nextEntries = loadPlannedWorkouts()
+    .map((planned) => {
+      if (planned.date !== date) {
+        return planned
+      }
 
-    return {
-      ...planned,
-      entries: planned.entries.filter((entry) => entry.exerciseId !== exerciseId),
-    }
-  })
+      return {
+        ...planned,
+        entries: planned.entries.filter((entry) => entry.exerciseId !== exerciseId),
+      }
+    })
+    .filter((planned) => planned.entries.length > 0)
 
   window.localStorage.setItem(
     PLANNED_WORKOUTS_STORAGE_KEY,

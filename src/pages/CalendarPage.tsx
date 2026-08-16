@@ -40,6 +40,7 @@ const statusSymbols = {
 
 interface CalendarPageProps {
   selectedDate?: string
+  onSelectDate?: (date: string) => void
 }
 
 function getMonthStateFromIsoDate(isoDate?: string) {
@@ -67,7 +68,10 @@ function shiftMonth(year: number, monthIndex: number, direction: -1 | 1) {
   }
 }
 
-export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarPageProps) {
+export function CalendarPage({
+  selectedDate: controlledSelectedDate,
+  onSelectDate,
+}: CalendarPageProps) {
   const [history, setHistory] = useState(() => loadWorkoutHistory())
   const [plannedWorkouts, setPlannedWorkouts] = useState(() => loadPlannedWorkouts())
   const [visibleMonth, setVisibleMonth] = useState(() =>
@@ -176,6 +180,11 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
     setHistory(nextHistory)
   }
 
+  function handleSelectDate(date: string) {
+    setSelectedDate(date)
+    onSelectDate?.(date)
+  }
+
   return (
     <section className="page-card">
       <div className="page-card__header">
@@ -264,7 +273,7 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
               className={`calendar-day calendar-day--${day.status}${
                 day.isTrainingDay ? ' calendar-day--training' : ''
               }${day.isoDate === selectedDate ? ' calendar-day--selected' : ''}`}
-              onClick={() => setSelectedDate(day.isoDate)}
+              onClick={() => handleSelectDate(day.isoDate)}
               aria-label={`${formatCalendarDate(day.isoDate)}. ${statusText}`}
               aria-pressed={day.isoDate === selectedDate}
             >
