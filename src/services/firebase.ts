@@ -84,6 +84,10 @@ export function getFirebaseStorage() {
 }
 
 export function getCurrentFirebaseUser() {
+  if (!isFirebaseConfigured()) {
+    return null
+  }
+
   return getFirebaseAuth().currentUser
 }
 
@@ -137,10 +141,19 @@ export async function initializeFirebaseAuthSession() {
 }
 
 export function subscribeToFirebaseAuth(listener: (user: User | null) => void) {
+  if (!isFirebaseConfigured()) {
+    listener(null)
+    return () => undefined
+  }
+
   return onAuthStateChanged(getFirebaseAuth(), listener)
 }
 
 export async function signInWithGoogle() {
+  if (!isFirebaseConfigured()) {
+    throw new Error(getFirebaseConfigError() ?? 'Firebase is not configured')
+  }
+
   const auth = getFirebaseAuth()
   const provider = new GoogleAuthProvider()
   provider.setCustomParameters({ prompt: 'select_account' })
@@ -172,6 +185,10 @@ export async function signInWithGoogle() {
 }
 
 export async function signOutFromFirebase() {
+  if (!isFirebaseConfigured()) {
+    return null
+  }
+
   await signOut(getFirebaseAuth())
   authReadyPromise = null
   return initializeFirebaseAuthSession()
