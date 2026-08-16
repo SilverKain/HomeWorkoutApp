@@ -61,6 +61,11 @@ export function getWeekTrainingDates(todayIsoDate: string) {
   return [monday, wednesday, friday]
 }
 
+function getNextWeekTrainingDates(todayIsoDate: string) {
+  const nextWeekReferenceDate = addDays(startOfWeekMonday(todayIsoDate), 7)
+  return getWeekTrainingDates(nextWeekReferenceDate)
+}
+
 export function getNextTrainingDate(todayIsoDate: string) {
   const currentDate = getDateFromIso(todayIsoDate)
 
@@ -584,21 +589,29 @@ export function generateWeeklyWorkoutPlans(
   todayIsoDate: string,
 ): PlannedWorkoutEntry[] {
   const exerciseMap = buildExerciseMap(exercises)
-  const weekDates = getWeekTrainingDates(todayIsoDate)
-  const weeklyHistory = buildWeeklyHistory(history, weekDates)
-  const usedMuscleBias = calculateUsedMuscleBias(weeklyHistory, exercises)
   const hasCompletedWorkoutToday = history.some(
     (entry) =>
       entry.date === todayIsoDate &&
       entry.entries.some((exerciseEntry) => exerciseEntry.completed),
   )
-  const activeDates = weekDates.filter((date) => {
+  const currentWeekDates = getWeekTrainingDates(todayIsoDate)
+  const currentWeekActiveDates = currentWeekDates.filter((date) => {
     if (date > todayIsoDate) {
       return true
     }
 
     return date === todayIsoDate && !hasCompletedWorkoutToday
   })
+  const weekDates =
+    currentWeekActiveDates.length > 0
+      ? currentWeekDates
+      : getNextWeekTrainingDates(todayIsoDate)
+  const activeDates =
+    currentWeekActiveDates.length > 0
+      ? currentWeekActiveDates
+      : weekDates
+  const weeklyHistory = buildWeeklyHistory(history, weekDates)
+  const usedMuscleBias = calculateUsedMuscleBias(weeklyHistory, exercises)
   const usedExerciseIds = new Set<string>()
   const weekKey = weekDates[0]
   const effectivenessMap = Object.fromEntries(

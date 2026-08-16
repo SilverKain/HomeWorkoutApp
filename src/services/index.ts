@@ -2,6 +2,7 @@ export {
   loadWorkoutHistory,
   saveWorkoutHistoryEntry,
   WORKOUT_HISTORY_STORAGE_KEY,
+  WORKOUT_HISTORY_UPDATED_EVENT,
 } from './workoutHistory.ts'
 export {
   getFirebaseApp,

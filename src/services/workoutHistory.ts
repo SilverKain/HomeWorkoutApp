@@ -2,9 +2,18 @@ import type { WorkoutDraft, WorkoutHistoryEntry } from '../types/workout.ts'
 import { syncWorkoutHistoryToFirebase } from './firebaseTrainingSync.ts'
 
 export const WORKOUT_HISTORY_STORAGE_KEY = 'home-workout-history'
+export const WORKOUT_HISTORY_UPDATED_EVENT = 'workout-history-updated'
 
 function canUseLocalStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+}
+
+function notifyWorkoutHistoryUpdated() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.dispatchEvent(new Event(WORKOUT_HISTORY_UPDATED_EVENT))
 }
 
 export function loadWorkoutHistory(): WorkoutHistoryEntry[] {
@@ -48,6 +57,7 @@ export function saveWorkoutHistoryEntry(
     JSON.stringify(nextHistory),
   )
   syncWorkoutHistoryToFirebase(nextHistory)
+  notifyWorkoutHistoryUpdated()
 
   return historyEntry
 }
@@ -76,6 +86,7 @@ export function removeWorkoutHistoryExercise(date: string, exerciseId: string) {
     JSON.stringify(nextHistory),
   )
   syncWorkoutHistoryToFirebase(nextHistory)
+  notifyWorkoutHistoryUpdated()
 
   return nextHistory
 }

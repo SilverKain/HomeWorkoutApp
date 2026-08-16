@@ -7,9 +7,11 @@ import {
   removePlannedWorkoutExercise,
 } from '../services/plannedWorkouts.ts'
 import {
+  WORKOUT_HISTORY_UPDATED_EVENT,
   loadWorkoutHistory,
   removeWorkoutHistoryExercise,
 } from '../services/workoutHistory.ts'
+import { FIREBASE_SYNC_EVENT } from '../services/firebaseTrainingSync.ts'
 import {
   buildMonthCalendar,
   formatCalendarDate,
@@ -93,20 +95,36 @@ export function CalendarPage({ selectedDate: controlledSelectedDate }: CalendarP
   }, [controlledSelectedDate])
 
   useEffect(() => {
-    const handlePlannedWorkoutsUpdated = () => {
+    const syncCalendarState = () => {
       setPlannedWorkouts(loadPlannedWorkouts())
       setHistory(loadWorkoutHistory())
     }
 
     window.addEventListener(
       PLANNED_WORKOUTS_UPDATED_EVENT,
-      handlePlannedWorkoutsUpdated,
+      syncCalendarState,
+    )
+    window.addEventListener(
+      WORKOUT_HISTORY_UPDATED_EVENT,
+      syncCalendarState,
+    )
+    window.addEventListener(
+      FIREBASE_SYNC_EVENT,
+      syncCalendarState,
     )
 
     return () => {
       window.removeEventListener(
         PLANNED_WORKOUTS_UPDATED_EVENT,
-        handlePlannedWorkoutsUpdated,
+        syncCalendarState,
+      )
+      window.removeEventListener(
+        WORKOUT_HISTORY_UPDATED_EVENT,
+        syncCalendarState,
+      )
+      window.removeEventListener(
+        FIREBASE_SYNC_EVENT,
+        syncCalendarState,
       )
     }
   }, [])

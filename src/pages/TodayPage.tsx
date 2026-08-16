@@ -14,12 +14,15 @@ import {
   PLANNED_WORKOUTS_UPDATED_EVENT,
   loadPlannedWorkouts,
   removePlannedWorkoutByDate,
+  removePlannedWorkoutExercise,
   savePlannedWorkouts,
 } from '../services/plannedWorkouts.ts'
 import { FIREBASE_SYNC_EVENT } from '../services/firebaseTrainingSync.ts'
 import {
   loadWorkoutHistory,
+  removeWorkoutHistoryExercise,
   saveWorkoutHistoryEntry,
+  WORKOUT_HISTORY_UPDATED_EVENT,
 } from '../services/workoutHistory.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import type {
@@ -110,6 +113,10 @@ export function TodayPage() {
       syncTodayState,
     )
     window.addEventListener(
+      WORKOUT_HISTORY_UPDATED_EVENT,
+      syncTodayState,
+    )
+    window.addEventListener(
       FIREBASE_SYNC_EVENT,
       syncTodayState,
     )
@@ -117,6 +124,10 @@ export function TodayPage() {
     return () => {
       window.removeEventListener(
         PLANNED_WORKOUTS_UPDATED_EVENT,
+        syncTodayState,
+      )
+      window.removeEventListener(
+        WORKOUT_HISTORY_UPDATED_EVENT,
         syncTodayState,
       )
       window.removeEventListener(
@@ -177,6 +188,8 @@ export function TodayPage() {
   const completedExerciseNames = completedEntries
     .map((entry) => exerciseMap[entry.exerciseId]?.name ?? entry.exerciseId)
     .slice(0, 6)
+  const todayHistoryEntry = history.find((entry) => entry.date === todayDate)
+  const todayPlannedEntry = plannedWorkouts.find((entry) => entry.date === todayDate)
 
   function updateEntry(
     exerciseId: string,
@@ -191,6 +204,14 @@ export function TodayPage() {
   }
 
   function removeEntry(exerciseId: string) {
+    if (todayHistoryEntry) {
+      const nextHistory = removeWorkoutHistoryExercise(todayDate, exerciseId)
+      setHistory(nextHistory)
+    } else if (todayPlannedEntry) {
+      const nextPlans = removePlannedWorkoutExercise(todayDate, exerciseId)
+      setPlannedWorkouts(nextPlans)
+    }
+
     setDraft((currentDraft) => ({
       ...currentDraft,
       entries: currentDraft.entries.filter((entry) => entry.exerciseId !== exerciseId),

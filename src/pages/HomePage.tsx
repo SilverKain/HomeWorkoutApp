@@ -11,6 +11,10 @@ import {
 import { exercises, muscleGroups } from '../data/index.ts'
 import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import {
+  FIREBASE_SYNC_EVENT,
+  WORKOUT_HISTORY_UPDATED_EVENT,
+} from '../services/index.ts'
+import {
   PLANNED_WORKOUTS_UPDATED_EVENT,
   loadPlannedWorkouts,
   savePlannedWorkouts,
@@ -107,20 +111,36 @@ export function HomePage({
   const [expandedReasonKey, setExpandedReasonKey] = useState<string | null>(null)
 
   useEffect(() => {
-    const handlePlannedWorkoutsUpdated = () => {
+    const syncHomeState = () => {
       setPlannedWorkouts(loadPlannedWorkouts())
       setHistory(loadWorkoutHistory())
     }
 
     window.addEventListener(
       PLANNED_WORKOUTS_UPDATED_EVENT,
-      handlePlannedWorkoutsUpdated,
+      syncHomeState,
+    )
+    window.addEventListener(
+      WORKOUT_HISTORY_UPDATED_EVENT,
+      syncHomeState,
+    )
+    window.addEventListener(
+      FIREBASE_SYNC_EVENT,
+      syncHomeState,
     )
 
     return () => {
       window.removeEventListener(
         PLANNED_WORKOUTS_UPDATED_EVENT,
-        handlePlannedWorkoutsUpdated,
+        syncHomeState,
+      )
+      window.removeEventListener(
+        WORKOUT_HISTORY_UPDATED_EVENT,
+        syncHomeState,
+      )
+      window.removeEventListener(
+        FIREBASE_SYNC_EVENT,
+        syncHomeState,
       )
     }
   }, [])

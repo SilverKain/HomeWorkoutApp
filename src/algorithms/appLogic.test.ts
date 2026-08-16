@@ -208,4 +208,15 @@ describe('Пункт 32: логика приложения', () => {
     expect(plannedDay?.status).toBe('planned')
     expect(idleDay?.status).toBe('idle')
   })
+
+  it('создаёт следующий недельный план после воскресенья', () => {
+    const sunday = '2026-08-16'
+    const plans = generateWeeklyWorkoutPlans(exercises, muscleGroups, [], sunday)
+
+    expect(plans.map((plan) => plan.date)).toEqual([
+      '2026-08-17',
+      '2026-08-19',
+      '2026-08-21',
+    ])
+  })
 })
