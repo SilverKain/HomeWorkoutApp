@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ExerciseVisual } from '../components/ExerciseVisual.tsx'
-import { exercises } from '../data/index.ts'
+import { exercises, muscleGroups } from '../data/index.ts'
 import {
   PLANNED_WORKOUTS_UPDATED_EVENT,
   loadPlannedWorkouts,
@@ -12,6 +12,7 @@ import {
   removeWorkoutHistoryExercise,
 } from '../services/workoutHistory.ts'
 import { FIREBASE_SYNC_EVENT } from '../services/firebaseTrainingSync.ts'
+import { resolveMuscleGroups } from '../services/musclePriorities.ts'
 import {
   buildMonthCalendar,
   formatCalendarDate,
@@ -66,6 +67,15 @@ function shiftMonth(year: number, monthIndex: number, direction: -1 | 1) {
     year: nextDate.getFullYear(),
     monthIndex: nextDate.getMonth(),
   }
+}
+
+const resolvedMuscles = resolveMuscleGroups(muscleGroups)
+
+function getExerciseMuscleNames(entryMuscles: Partial<Record<string, number>>) {
+  return Object.entries(entryMuscles)
+    .filter(([, coefficient]) => (coefficient ?? 0) >= 0.2)
+    .sort((left, right) => (right[1] ?? 0) - (left[1] ?? 0))
+    .map(([muscleId]) => resolvedMuscles.find((muscle) => muscle.id === muscleId)?.name ?? muscleId)
 }
 
 export function CalendarPage({
@@ -311,6 +321,7 @@ export function CalendarPage({
               <div className="calendar-details-list">
                 {selectedHistoryEntry.entries.map((entry, index) => {
                   const exercise = exercises.find((item) => item.id === entry.exerciseId)
+                  const usedMuscles = exercise ? getExerciseMuscleNames(exercise.muscles) : []
 
                   return (
                     <article
@@ -324,6 +335,7 @@ export function CalendarPage({
                         <strong>{exercise?.name ?? entry.exerciseId}</strong>
                         <p>Подходы: {entry.sets}</p>
                         <p>Повторения: {entry.reps}</p>
+                        <p>Мышцы: {usedMuscles.length > 0 ? usedMuscles.join(', ') : 'Не указаны'}</p>
                         <p>Статус: {entry.completed ? 'выполнено' : 'не выполнено'}</p>
                         <button
                           type="button"
@@ -341,6 +353,7 @@ export function CalendarPage({
               <div className="calendar-details-list">
                 {selectedPlannedEntry.entries.map((entry, index) => {
                   const exercise = exercises.find((item) => item.id === entry.exerciseId)
+                  const usedMuscles = exercise ? getExerciseMuscleNames(exercise.muscles) : []
 
                   return (
                     <article
@@ -354,6 +367,7 @@ export function CalendarPage({
                         <strong>{exercise?.name ?? entry.exerciseId}</strong>
                         <p>Подходы: {entry.sets}</p>
                         <p>Повторения: {entry.reps}</p>
+                        <p>Мышцы: {usedMuscles.length > 0 ? usedMuscles.join(', ') : 'Не указаны'}</p>
                         <p>Статус: запланировано</p>
                         <button
                           type="button"

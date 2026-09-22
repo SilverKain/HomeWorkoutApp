@@ -8,6 +8,8 @@ export interface RecoveryScoreItem {
   muscleName: string
   score: number
   recentLoad: number
+  dailyRecoveryGain: number
+  daysToFullRecovery: number
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -36,6 +38,31 @@ function applyLoadToAccumulator(
     accumulator[typedMuscleId] =
       (accumulator[typedMuscleId] ?? 0) + load * decayFactor
   })
+}
+
+function getRecoveryScoreFromLoad(load: number) {
+  return clamp(Math.round(100 - load * 1.35), 0, 100)
+}
+
+function getProjectedLoadWithoutTraining(recentLoad: number, daysWithoutTraining: number) {
+  return recentLoad * Math.exp(-daysWithoutTraining / 2.4)
+}
+
+function getDaysToFullRecovery(recentLoad: number) {
+  if (recentLoad <= 0) {
+    return 0
+  }
+
+  const fullRecoveryLoadThreshold = 0.37
+
+  if (recentLoad <= fullRecoveryLoadThreshold) {
+    return 0
+  }
+
+  return Math.max(
+    1,
+    Math.ceil(2.4 * Math.log(recentLoad / fullRecoveryLoadThreshold)),
+  )
 }
 
 export function calculateRecentMuscleLoad(
@@ -79,6 +106,12 @@ export function calculateRecoveryScores(
     muscleId: item.muscleId,
     muscleName: item.muscleName,
     recentLoad: item.load,
-    score: clamp(Math.round(100 - item.load * 1.35), 0, 100),
+    score: getRecoveryScoreFromLoad(item.load),
+    dailyRecoveryGain: Math.max(
+      0,
+      getRecoveryScoreFromLoad(getProjectedLoadWithoutTraining(item.load, 1)) -
+        getRecoveryScoreFromLoad(item.load),
+    ),
+    daysToFullRecovery: getDaysToFullRecovery(item.load),
   }))
 }

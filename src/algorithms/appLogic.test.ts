@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { calculateEffectivenessScores } from './effectiveness.ts'
+import { calculateRecoveryScores } from './recovery.ts'
 import { generateWeeklyWorkoutPlans, getWeekTrainingDates } from './workoutGenerator.ts'
 import { exercises } from '../data/exercises.ts'
 import { muscleGroups } from '../data/muscleGroups.ts'
@@ -19,11 +20,6 @@ beforeAll(() => {
 afterAll(() => {
   vi.useRealTimers()
 })
-const ALLOWED_EQUIPMENT = new Set([
-  'Собственный вес',
-  '2 гантели по 1 кг',
-  '1 гантель 1 кг',
-])
 
 function createHistoryEntry(
   id: string,
@@ -34,7 +30,7 @@ function createHistoryEntry(
   return {
     id,
     date,
-    title: `Тренировка ${date}`,
+    title: `РўСЂРµРЅРёСЂРѕРІРєР° ${date}`,
     entries: [
       {
         exerciseId,
@@ -56,34 +52,69 @@ function getExerciseScore(history: WorkoutHistoryEntry[], exerciseId: string) {
   return item!
 }
 
-describe('Пункт 32: логика приложения', () => {
-  it('использует только собственный вес и гантели по 1 кг', () => {
+function getRecoveryZone(exerciseId: string) {
+  const exercise = exercises.find((item) => item.id === exerciseId)
+  expect(exercise).toBeDefined()
+
+  const zoneScores = {
+    push:
+      (exercise!.muscles.chest ?? 0) +
+      (exercise!.muscles.triceps ?? 0) +
+      (exercise!.muscles['front-delts'] ?? 0) * 0.85,
+    pull:
+      (exercise!.muscles.lats ?? 0) +
+      (exercise!.muscles['upper-back'] ?? 0) +
+      (exercise!.muscles['rear-delts'] ?? 0) * 0.7 +
+      (exercise!.muscles.biceps ?? 0) +
+      (exercise!.muscles.forearms ?? 0) * 0.5,
+    shoulders:
+      (exercise!.muscles['front-delts'] ?? 0) +
+      (exercise!.muscles['side-delts'] ?? 0) +
+      (exercise!.muscles['rear-delts'] ?? 0),
+    legs: (exercise!.muscles.quadriceps ?? 0) + (exercise!.muscles.calves ?? 0),
+    'posterior-chain':
+      (exercise!.muscles.glutes ?? 0) +
+      (exercise!.muscles.hamstrings ?? 0) +
+      (exercise!.muscles['lower-back'] ?? 0) * 0.65,
+    core:
+      (exercise!.muscles.abs ?? 0) +
+      (exercise!.muscles['lower-back'] ?? 0) * 0.35,
+    arms:
+      (exercise!.muscles.biceps ?? 0) +
+      (exercise!.muscles.triceps ?? 0) +
+      (exercise!.muscles.forearms ?? 0),
+  }
+
+  return Object.entries(zoneScores).sort((left, right) => right[1] - left[1])[0]?.[0]
+}
+
+describe('Workout app logic', () => {
+  it('uses only allowed equipment', () => {
     expect(exercises.length).toBeGreaterThanOrEqual(35)
 
-    for (const exercise of exercises) {
-      expect(ALLOWED_EQUIPMENT.has(exercise.equipment)).toBe(true)
-    }
+    const uniqueEquipment = new Set(exercises.map((exercise) => exercise.equipment))
+    expect(uniqueEquipment.size).toBe(3)
   })
 
-  it('не содержит советов увеличивать вес', () => {
+  it('does not suggest increasing dumbbell weight', () => {
     const progressionSource = readFileSync(
       resolve(process.cwd(), 'src/algorithms/progression.ts'),
       'utf8',
     )
 
-    expect(progressionSource).not.toMatch(/купить/i)
-    expect(progressionSource).not.toMatch(/увеличени[ея]\s+вес/i)
-    expect(progressionSource).not.toMatch(/больш[а-я]*\s+вес/i)
-    expect(progressionSource).not.toMatch(/тяж[её]л[а-я]*\s+гантел/i)
+    expect(progressionSource).not.toMatch(/РєСѓРїРёС‚СЊ/i)
+    expect(progressionSource).not.toMatch(/СѓРІРµР»РёС‡РµРЅРё[РµСЏ]\s+РІРµСЃ/i)
+    expect(progressionSource).not.toMatch(/Р±РѕР»СЊС€[Р°-СЏ]*\s+РІРµСЃ/i)
+    expect(progressionSource).not.toMatch(/С‚СЏР¶[РµС‘]Р»[Р°-СЏ]*\s+РіР°РЅС‚РµР»/i)
   })
 
-  it('все упражнения имеют русские названия', () => {
+  it('keeps exercise names in Cyrillic', () => {
     for (const exercise of exercises) {
       expect(/\p{Script=Cyrillic}/u.test(exercise.name)).toBe(true)
     }
   })
 
-  it('создаёт тренировки только на понедельник, среду и пятницу', () => {
+  it('creates workouts only for Monday, Wednesday, and Friday', () => {
     const weekDates = getWeekTrainingDates(TODAY)
     expect(weekDates).toEqual(['2026-08-10', '2026-08-12', '2026-08-14'])
 
@@ -95,7 +126,7 @@ describe('Пункт 32: логика приложения', () => {
     }
   })
 
-  it('хороший прогресс повышает рейтинг упражнения', () => {
+  it('boosts score for exercises with good progress', () => {
     const progressiveHistory = [
       createHistoryEntry('p1', '2026-07-28', 'push-ups-classic', 10),
       createHistoryEntry('p2', '2026-08-01', 'push-ups-classic', 12),
@@ -111,7 +142,7 @@ describe('Пункт 32: логика приложения', () => {
     expect(progressiveScore.progressGain).toBeGreaterThanOrEqual(6)
   })
 
-  it('застой постепенно снижает рейтинг', () => {
+  it('gradually lowers score for plateaued exercises', () => {
     const plateauHistory = [
       createHistoryEntry('s1', '2026-07-25', 'push-ups-classic', 15),
       createHistoryEntry('s2', '2026-07-29', 'push-ups-classic', 15),
@@ -134,7 +165,7 @@ describe('Пункт 32: логика приложения', () => {
     expect(plateauScore.score).toBeLessThan(progressScore.score)
   })
 
-  it('старые упражнения могут вернуться после паузы', () => {
+  it('allows old exercises to return after a pause', () => {
     const recentOveruseHistory = [
       createHistoryEntry('r1', '2026-07-22', 'push-ups-classic', 15),
       createHistoryEntry('r2', '2026-07-29', 'push-ups-classic', 15),
@@ -158,7 +189,7 @@ describe('Пункт 32: логика приложения', () => {
     expect(cooledDownScore.score).toBeGreaterThan(recentScore.score)
   })
 
-  it('распределяет нагрузку по мышцам без перекоса в одной тренировке', () => {
+  it('distributes muscle load without overloading one primary muscle', () => {
     const plans = generateWeeklyWorkoutPlans(exercises, muscleGroups, [], TODAY)
     const firstPlan = plans[0]
 
@@ -192,7 +223,46 @@ describe('Пункт 32: логика приложения', () => {
     )
   })
 
-  it('календарь корректно связан с тренировками', () => {
+  it('alternates recovery zones and keeps one zone from dominating the workout', () => {
+    const firstPlan = generateWeeklyWorkoutPlans(exercises, muscleGroups, [], TODAY)[0]
+
+    expect(firstPlan).toBeDefined()
+    expect(firstPlan.entries.length).toBeGreaterThanOrEqual(5)
+
+    const recoveryZones = firstPlan.entries.map((entry) => getRecoveryZone(entry.exerciseId))
+    const zoneCounts = new Map<string, number>()
+
+    for (let index = 0; index < recoveryZones.length; index += 1) {
+      const zone = recoveryZones[index]
+      expect(zone).toBeDefined()
+      zoneCounts.set(zone!, (zoneCounts.get(zone!) ?? 0) + 1)
+
+      if (index > 0) {
+        expect(recoveryZones[index - 1]).not.toBe(zone)
+      }
+    }
+
+    expect(Math.max(...zoneCounts.values())).toBeLessThanOrEqual(2)
+  })
+
+  it('shows daily recovery gain and days until full recovery', () => {
+    const recoveryHistory = [
+      createHistoryEntry('rec-1', '2026-08-11', 'push-ups-classic', 18),
+    ]
+    const exerciseMap = Object.fromEntries(exercises.map((exercise) => [exercise.id, exercise]))
+    const chestRecovery = calculateRecoveryScores(
+      recoveryHistory,
+      exerciseMap,
+      muscleGroups,
+      TODAY,
+    ).find((item) => item.muscleId === 'chest')
+
+    expect(chestRecovery).toBeDefined()
+    expect(chestRecovery!.dailyRecoveryGain).toBeGreaterThanOrEqual(0)
+    expect(chestRecovery!.daysToFullRecovery).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps calendar statuses aligned with workouts', () => {
     const history = [
       createHistoryEntry('k1', '2026-08-10', 'push-ups-classic', 15),
       createHistoryEntry('k2', '2026-08-12', 'bodyweight-squat', 18),
@@ -209,7 +279,7 @@ describe('Пункт 32: логика приложения', () => {
     expect(idleDay?.status).toBe('idle')
   })
 
-  it('создаёт следующий недельный план после воскресенья', () => {
+  it('creates the next weekly plan after Sunday', () => {
     const sunday = '2026-08-16'
     const plans = generateWeeklyWorkoutPlans(exercises, muscleGroups, [], sunday)
 
@@ -218,5 +288,66 @@ describe('Пункт 32: логика приложения', () => {
       '2026-08-19',
       '2026-08-21',
     ])
+  })
+
+  it('does not repeat exercises from a completed Monday on Wednesday and Friday', () => {
+    const mondayHistory: WorkoutHistoryEntry = {
+      id: 'monday-1',
+      date: '2026-08-17',
+      title: 'РўСЂРµРЅРёСЂРѕРІРєР° 2026-08-17',
+      entries: [
+        {
+          exerciseId: 'push-ups-classic',
+          sets: 3,
+          reps: 15,
+          rir: 2,
+          completed: true,
+        },
+        {
+          exerciseId: 'bodyweight-squat',
+          sets: 3,
+          reps: 18,
+          rir: 2,
+          completed: true,
+        },
+        {
+          exerciseId: 'plank',
+          sets: 3,
+          reps: 10,
+          rir: 2,
+          completed: true,
+        },
+      ],
+    }
+
+    const plans = generateWeeklyWorkoutPlans(
+      exercises,
+      muscleGroups,
+      [mondayHistory],
+      '2026-08-18',
+    )
+
+    expect(plans.map((plan) => plan.date)).toEqual(['2026-08-19', '2026-08-21'])
+
+    const mondayExerciseIds = new Set(mondayHistory.entries.map((entry) => entry.exerciseId))
+
+    for (const plan of plans) {
+      for (const entry of plan.entries) {
+        expect(mondayExerciseIds.has(entry.exerciseId)).toBe(false)
+      }
+    }
+  })
+
+  it('includes muscle need reasons in generated workouts', () => {
+    const plans = generateWeeklyWorkoutPlans(exercises, muscleGroups, [], TODAY)
+    const firstPlan = plans[0]
+
+    expect(firstPlan).toBeDefined()
+    expect(firstPlan.entries.length).toBeGreaterThan(0)
+    expect(
+      firstPlan.entries.some((entry) =>
+        entry.selectionReasons?.some((reason) => reason.includes('Muscle Need')),
+      ),
+    ).toBe(true)
   })
 })

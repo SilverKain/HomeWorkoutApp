@@ -1,14 +1,46 @@
 import type { Exercise } from '../types/exercise.ts'
-import bentOverDumbbellRowImage from '../assets/exercises/bent-over-dumbbell-row.png'
-import bodyweightSquatPausedImage from '../assets/exercises/bodyweight-squat-paused.png'
-import bulgarianSplitSquatDumbbellsImage from '../assets/exercises/bulgarian-split-squat-dumbbells.png'
-import dumbbellLungesImage from '../assets/exercises/dumbbell-lunges.png'
-import oneArmDumbbellRowImage from '../assets/exercises/one-arm-dumbbell-row.png'
-import supermanHoldImage from '../assets/exercises/superman-hold.png'
+import {
+  bentOverDumbbellRowImage,
+  bicepCurlsImage,
+  birdDogImage,
+  bodyweightSquatPausedImage,
+  bodyweightSquatSlowImage,
+  bulgarianSplitSquatImage,
+  bulgarianSplitSquatDumbbellsImage,
+  calfRaisesImage,
+  calfRaisesDumbbellsImage,
+  crunchesImage,
+  dumbbellLungesImage,
+  dumbbellOverheadPressImage,
+  floorDumbbellFlyImage,
+  floorDumbbellPulloverImage,
+  frontRaisesImage,
+  gluteBridgeImage,
+  hammerCurlsImage,
+  lateralRaisesImage,
+  oneArmDumbbellRowImage,
+  overheadTricepsExtensionImage,
+  plankImage,
+  pushUpsClassicImage,
+  pushUpsCloseImage,
+  pushUpsPausedImage,
+  pushUpsSlowImage,
+  rearDeltFlyImage,
+  romanianDeadliftDumbbellsImage,
+  reverseLungesImage,
+  reverseSnowAngelsImage,
+  sidePlankImage,
+  singleArmFrontRaiseImage,
+  singleArmLateralRaiseImage,
+  singleLegGluteBridgeImage,
+  supermanHoldImage,
+  legRaisesImage,
+} from './exerciseImages.ts'
 
 export const exercises: Exercise[] = [
   {
     id: 'push-ups-classic',
+    imageSrc: pushUpsClassicImage,
     name: 'Обычные отжимания',
     description: 'Базовые отжимания от пола в среднем темпе.',
     equipment: 'Собственный вес',
@@ -39,6 +71,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'push-ups-close',
+    imageSrc: pushUpsCloseImage,
     name: 'Узкие отжимания',
     description: 'Отжимания с узкой постановкой рук для большего участия трицепса.',
     equipment: 'Собственный вес',
@@ -54,6 +87,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'push-ups-paused',
+    imageSrc: pushUpsPausedImage,
     name: 'Отжимания с паузой',
     description: 'Отжимания с короткой остановкой в нижней точке.',
     equipment: 'Собственный вес',
@@ -69,6 +103,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'push-ups-slow',
+    imageSrc: pushUpsSlowImage,
     name: 'Медленные отжимания',
     description: 'Контрольное выполнение отжиманий с замедленной фазой опускания.',
     equipment: 'Собственный вес',
@@ -99,6 +134,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'reverse-snow-angels',
+    imageSrc: reverseSnowAngelsImage,
     name: 'Обратные снежные ангелы',
     description: 'Подъёмы рук лёжа на животе для задней цепи верха тела.',
     equipment: 'Собственный вес',
@@ -130,6 +166,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bodyweight-squat-slow',
+    imageSrc: bodyweightSquatSlowImage,
     name: 'Медленные приседания',
     description: 'Приседания в замедленном темпе с контролем амплитуды.',
     equipment: 'Собственный вес',
@@ -163,6 +200,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'reverse-lunges',
+    imageSrc: reverseLungesImage,
     name: 'Выпады назад',
     description: 'Поочерёдные выпады назад без дополнительного веса.',
     equipment: 'Собственный вес',
@@ -179,6 +217,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bulgarian-split-squat',
+    imageSrc: bulgarianSplitSquatImage,
     name: 'Болгарские выпады',
     description: 'Сплит-присед с задней ногой на возвышении.',
     equipment: 'Собственный вес',
@@ -195,6 +234,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'glute-bridge',
+    imageSrc: gluteBridgeImage,
     name: 'Ягодичный мост',
     description: 'Подъём таза лёжа на полу с опорой на обе ноги.',
     equipment: 'Собственный вес',
@@ -210,6 +250,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'single-leg-glute-bridge',
+    imageSrc: singleLegGluteBridgeImage,
     name: 'Ягодичный мост на одной ноге',
     description: 'Усложнённый вариант ягодичного моста с опорой на одну ногу.',
     equipment: 'Собственный вес',
@@ -225,6 +266,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'calf-raises',
+    imageSrc: calfRaisesImage,
     name: 'Подъёмы на носки',
     description: 'Подъёмы на носки стоя в полной амплитуде.',
     equipment: 'Собственный вес',
@@ -239,6 +281,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'plank',
+    imageSrc: plankImage,
     name: 'Планка',
     description: 'Статическое удержание корпуса в прямой линии.',
     equipment: 'Собственный вес',
@@ -254,6 +297,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'side-plank',
+    imageSrc: sidePlankImage,
     name: 'Боковая планка',
     description: 'Статическое удержание корпуса на одном боку.',
     equipment: 'Собственный вес',
@@ -269,6 +313,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'crunches',
+    imageSrc: crunchesImage,
     name: 'Скручивания',
     description: 'Классические скручивания лёжа на полу.',
     equipment: 'Собственный вес',
@@ -297,6 +342,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'leg-raises',
+    imageSrc: legRaisesImage,
     name: 'Подъёмы ног',
     description: 'Подъём прямых ног лёжа на полу.',
     equipment: 'Собственный вес',
@@ -341,6 +387,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bird-dog',
+    imageSrc: birdDogImage,
     name: 'Птица-собака',
     description: 'Попеременное вытяжение руки и ноги в упоре на четвереньках.',
     equipment: 'Собственный вес',
@@ -370,6 +417,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'floor-dumbbell-fly',
+    imageSrc: floorDumbbellFlyImage,
     name: 'Разведение гантелей лёжа на полу',
     description: 'Разведение рук с гантелями лёжа на полу с мягким сгибом локтей.',
     equipment: '2 гантели по 1 кг',
@@ -419,6 +467,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'floor-dumbbell-pullover',
+    imageSrc: floorDumbbellPulloverImage,
     name: 'Пуловер с гантелью лёжа на полу',
     description: 'Подъём гантели дугой из-за головы лёжа на полу.',
     equipment: '1 гантель 1 кг',
@@ -434,6 +483,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'dumbbell-overhead-press',
+    imageSrc: dumbbellOverheadPressImage,
     name: 'Жим гантелей над головой',
     description: 'Жим двух гантелей вверх стоя или сидя на полу.',
     equipment: '2 гантели по 1 кг',
@@ -449,6 +499,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'lateral-raises',
+    imageSrc: lateralRaisesImage,
     name: 'Подъём гантелей через стороны',
     description: 'Подъём рук с гантелями в стороны до уровня плеч.',
     equipment: '2 гантели по 1 кг',
@@ -463,6 +514,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'front-raises',
+    imageSrc: frontRaisesImage,
     name: 'Подъём гантелей перед собой',
     description: 'Подъём прямых рук с гантелями перед корпусом.',
     equipment: '2 гантели по 1 кг',
@@ -477,6 +529,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'rear-delt-fly',
+    imageSrc: rearDeltFlyImage,
     name: 'Разведение гантелей в наклоне',
     description: 'Разведение рук в наклоне для задней дельты и верха спины.',
     equipment: '2 гантели по 1 кг',
@@ -492,6 +545,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bicep-curls',
+    imageSrc: bicepCurlsImage,
     name: 'Сгибание рук с гантелями',
     description: 'Классические подъёмы гантелей на бицепс.',
     equipment: '2 гантели по 1 кг',
@@ -506,6 +560,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'hammer-curls',
+    imageSrc: hammerCurlsImage,
     name: 'Молотковые сгибания',
     description: 'Сгибания рук нейтральным хватом.',
     equipment: '2 гантели по 1 кг',
@@ -520,6 +575,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'overhead-triceps-extension',
+    imageSrc: overheadTricepsExtensionImage,
     name: 'Разгибание рук с гантелью над головой',
     description: 'Разгибание рук из-за головы с одной гантелью.',
     equipment: '1 гантель 1 кг',
@@ -600,6 +656,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'romanian-deadlift-dumbbells',
+    imageSrc: romanianDeadliftDumbbellsImage,
     name: 'Румынская тяга с гантелями',
     description: 'Наклон с отведением таза назад и контролем спины.',
     equipment: '2 гантели по 1 кг',
@@ -631,6 +688,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'calf-raises-dumbbells',
+    imageSrc: calfRaisesDumbbellsImage,
     name: 'Подъёмы на носки с гантелями',
     description: 'Подъёмы на носки стоя с гантелями в руках.',
     equipment: '2 гантели по 1 кг',
@@ -674,6 +732,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'single-arm-front-raise',
+    imageSrc: singleArmFrontRaiseImage,
     name: 'Подъём гантели перед собой одной рукой',
     description: 'Поочерёдный подъём одной гантели перед собой.',
     equipment: '1 гантель 1 кг',
@@ -688,6 +747,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'single-arm-lateral-raise',
+    imageSrc: singleArmLateralRaiseImage,
     name: 'Подъём гантели через сторону одной рукой',
     description: 'Поочерёдный подъём одной гантели в сторону.',
     equipment: '1 гантель 1 кг',

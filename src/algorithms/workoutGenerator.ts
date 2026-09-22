@@ -25,6 +25,7 @@ interface SelectionContext {
   todayIsoDate: string
   needScoreMap: Record<string, ReturnType<typeof calculateMuscleNeedScores>[number] | undefined>
   effectivenessMap: Record<string, ReturnType<typeof calculateEffectivenessScores>[number] | undefined>
+  focusMuscleIds: string[]
 }
 
 function formatIsoDate(date: Date) {
@@ -128,6 +129,10 @@ function buildSelectionReasons(
       return
     }
 
+    if (needItem.score >= 72) {
+      reasons.push(`${needItem.muscleName.toLowerCase()} сейчас в высоком приоритете по Muscle Need`)
+    }
+
     if (needItem.recoveryScore >= 72) {
       reasons.push(`${needItem.muscleName.toLowerCase()} хорошо восстановлена`)
     }
@@ -136,6 +141,15 @@ function buildSelectionReasons(
       reasons.push(`${needItem.muscleName.toLowerCase()} недополучила недельную нагрузку`)
     }
   })
+
+  const focusedMuscles = topMuscleReasons
+    .filter(({ muscleId }) => context.focusMuscleIds.includes(muscleId))
+    .map(({ needItem }) => needItem?.muscleName)
+    .filter((muscleName): muscleName is string => muscleName != null)
+
+  if (focusedMuscles.length > 0) {
+    reasons.push(`поддерживает фокус следующей тренировки: ${focusedMuscles.join(', ').toLowerCase()}`)
+  }
 
   if (effectivenessItem?.goodProgress || (effectivenessItem?.progressScore ?? 0) >= 72) {
     reasons.push('в упражнении сохраняется прогресс')
@@ -161,6 +175,27 @@ function buildSelectionReasons(
   }
 
   return Array.from(new Set(reasons)).slice(0, 5)
+}
+
+function calculateNeedDrivenExerciseScore(
+  exercise: Exercise,
+  needScores: ReturnType<typeof calculateMuscleNeedScores>,
+  usedMuscleBias: Partial<Record<string, number>>,
+) {
+  return needScores.reduce((total, needItem) => {
+    const coefficient = exercise.muscles[needItem.muscleId] ?? 0
+
+    if (coefficient <= 0) {
+      return total
+    }
+
+    const usedPenalty = (usedMuscleBias[needItem.muscleId] ?? 0) * 10
+    const recoveryComponent = needItem.recoveryScore * 0.24
+    const underloadComponent = Math.max(0, 100 - needItem.recentLoad7d * 4) * 0.18
+    const demandComponent = needItem.score * 0.82
+
+    return total + coefficient * Math.max(0, demandComponent + recoveryComponent + underloadComponent - usedPenalty)
+  }, 0)
 }
 
 function buildWeeklyHistory(
@@ -198,25 +233,76 @@ function calculateUsedMuscleBias(
   return accumulator
 }
 
+function calculateUsedMuscleBiasFromEntries(
+  entries: WorkoutExerciseEntry[],
+  exercises: Exercise[],
+) {
+  const syntheticHistoryEntry: WorkoutHistoryEntry = {
+    id: 'synthetic-week-load',
+    date: '1970-01-01',
+    title: 'Synthetic week load',
+    entries,
+  }
+
+  return calculateUsedMuscleBias([syntheticHistoryEntry], exercises)
+}
+
+function createProjectedEntries(entries: WorkoutExerciseEntry[]) {
+  return entries.map((entry) => ({
+    ...entry,
+    completed: true,
+    completedSets: entry.sets,
+  }))
+}
+
 function scoreExerciseForWeek(
   exercise: Exercise,
   needScores: ReturnType<typeof calculateMuscleNeedScores>,
   usedMuscleBias: Partial<Record<string, number>>,
   slotIndex: number,
 ) {
-  const targetedNeed = needScores.reduce((total, needItem) => {
-    const coefficient = exercise.muscles[needItem.muscleId] ?? 0
-    const usedPenalty = usedMuscleBias[needItem.muscleId] ?? 0
-    return total + coefficient * Math.max(0, needItem.score - usedPenalty * 8)
-  }, 0)
-
+  const targetedNeed = calculateNeedDrivenExerciseScore(
+    exercise,
+    needScores,
+    usedMuscleBias,
+  )
   const diversityBonus = Object.keys(exercise.muscles).length * 2
   const movementBonus =
     slotIndex % 2 === 0
       ? exercise.baseEffectiveness * 20
       : exercise.baseEffectiveness * 18
+  const fatiguePenalty = exercise.fatigueLevel * 2.5
+  const focusBonus = needScores
+    .slice(0, 3)
+    .reduce((total, needItem) => total + (exercise.muscles[needItem.muscleId] ?? 0) * 18, 0)
 
-  return targetedNeed + diversityBonus + movementBonus
+  return targetedNeed + diversityBonus + movementBonus + focusBonus - fatiguePenalty
+}
+
+function calculateSelectionDisplayScore(
+  exercise: Exercise,
+  needScores: ReturnType<typeof calculateMuscleNeedScores>,
+  effectivenessScore?: number,
+) {
+  const targetedNeed = needScores.reduce((total, needItem) => {
+    const coefficient = exercise.muscles[needItem.muscleId] ?? 0
+
+    if (coefficient <= 0) {
+      return total
+    }
+
+    return total + coefficient * (needItem.score * 0.65 + needItem.recoveryScore * 0.35)
+  }, 0)
+  const normalizedNeed = Math.min(100, targetedNeed / 2.2)
+  const normalizedEffectiveness = effectivenessScore ?? 60
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(normalizedNeed * 0.68 + normalizedEffectiveness * 0.32),
+    ),
+  )
 }
 
 function buildScoredExercises(
@@ -265,6 +351,49 @@ function getEquipmentGroup(exercise: Exercise) {
   return /\d/.test(exercise.equipment) ? 'dumbbell' : 'bodyweight'
 }
 
+type RecoveryZone =
+  | 'push'
+  | 'pull'
+  | 'shoulders'
+  | 'legs'
+  | 'posterior-chain'
+  | 'core'
+  | 'arms'
+
+function getRecoveryZone(exercise: Exercise): RecoveryZone {
+  const zoneScores: Record<RecoveryZone, number> = {
+    push:
+      (exercise.muscles.chest ?? 0) +
+      (exercise.muscles.triceps ?? 0) +
+      (exercise.muscles['front-delts'] ?? 0) * 0.85,
+    pull:
+      (exercise.muscles.lats ?? 0) +
+      (exercise.muscles['upper-back'] ?? 0) +
+      (exercise.muscles['rear-delts'] ?? 0) * 0.7 +
+      (exercise.muscles.biceps ?? 0) +
+      (exercise.muscles.forearms ?? 0) * 0.5,
+    shoulders:
+      (exercise.muscles['front-delts'] ?? 0) +
+      (exercise.muscles['side-delts'] ?? 0) +
+      (exercise.muscles['rear-delts'] ?? 0),
+    legs: (exercise.muscles.quadriceps ?? 0) + (exercise.muscles.calves ?? 0),
+    'posterior-chain':
+      (exercise.muscles.glutes ?? 0) +
+      (exercise.muscles.hamstrings ?? 0) +
+      (exercise.muscles['lower-back'] ?? 0) * 0.65,
+    core:
+      (exercise.muscles.abs ?? 0) +
+      (exercise.muscles['lower-back'] ?? 0) * 0.35,
+    arms:
+      (exercise.muscles.biceps ?? 0) +
+      (exercise.muscles.triceps ?? 0) +
+      (exercise.muscles.forearms ?? 0),
+  }
+
+  return (Object.entries(zoneScores).sort((left, right) => right[1] - left[1])[0]?.[0] ??
+    'core') as RecoveryZone
+}
+
 function shouldReplaceWithAlternative(
   exerciseId: string,
   effectivenessMap: Record<string, ReturnType<typeof calculateEffectivenessScores>[number] | undefined>,
@@ -289,12 +418,25 @@ function violatesDiversityRules(
   strict: boolean,
 ) {
   const primaryMuscleId = getPrimaryMuscleId(candidate)
+  const candidateRecoveryZone = getRecoveryZone(candidate)
   const candidateHighLoadMuscles = new Set(getHighLoadMuscleIds(candidate))
   let samePatternCount = 0
   let samePrimaryMuscleCount = 0
+  let sameRecoveryZoneCount = 0
   let similarMovementCount = 0
+  let sameMovementTypeCount = 0
   let sameEquipmentCount = 0
   const candidateEquipmentGroup = getEquipmentGroup(candidate)
+  const lastSelectedExercise = selectedExercises.at(-1)
+  const consecutiveOverlapScore =
+    lastSelectedExercise == null ? 0 : getMuscleOverlapScore(candidate, lastSelectedExercise)
+  const consecutiveRecoveryZoneMatch =
+    lastSelectedExercise != null &&
+    getRecoveryZone(lastSelectedExercise) === candidateRecoveryZone
+  const consecutiveMovementMatch =
+    lastSelectedExercise != null &&
+    lastSelectedExercise.movementType === candidate.movementType &&
+    consecutiveOverlapScore >= 0.3
 
   for (const selected of selectedExercises) {
     const overlapScore = getMuscleOverlapScore(candidate, selected)
@@ -312,8 +454,16 @@ function violatesDiversityRules(
       samePrimaryMuscleCount += 1
     }
 
+    if (getRecoveryZone(selected) === candidateRecoveryZone) {
+      sameRecoveryZoneCount += 1
+    }
+
     if (sharedHighLoadMuscle && overlapScore >= 0.65) {
       similarMovementCount += 1
+    }
+
+    if (sameMovement) {
+      sameMovementTypeCount += 1
     }
 
     if (getEquipmentGroup(selected) === candidateEquipmentGroup) {
@@ -323,16 +473,22 @@ function violatesDiversityRules(
 
   if (strict) {
     return (
+      consecutiveRecoveryZoneMatch ||
+      consecutiveMovementMatch ||
       samePatternCount >= 1 ||
+      sameRecoveryZoneCount >= 2 ||
       samePrimaryMuscleCount >= 2 ||
       similarMovementCount >= 2 ||
+      sameMovementTypeCount >= 2 ||
       (candidateEquipmentGroup === 'dumbbell' && sameEquipmentCount >= 3)
     )
   }
 
   return (
     samePatternCount >= 2 ||
+    sameRecoveryZoneCount >= 3 ||
     samePrimaryMuscleCount >= 3 ||
+    sameMovementTypeCount >= 3 ||
     (candidateEquipmentGroup === 'dumbbell' && sameEquipmentCount >= 4)
   )
 }
@@ -483,7 +639,11 @@ function createGeneratedEntry(
     context,
     selectionNote,
   )
-  const selectionScore = context.effectivenessMap[plannedExercise.id]?.score ?? Math.round(emphasisScore)
+  const selectionScore = calculateSelectionDisplayScore(
+    plannedExercise,
+    Object.values(context.needScoreMap).filter((item): item is NonNullable<typeof item> => item != null),
+    context.effectivenessMap[plannedExercise.id]?.score,
+  )
 
   return {
     ...plannedDraftEntry,
@@ -513,6 +673,35 @@ function buildWorkoutEntriesForDate(
   const entries: WorkoutExerciseEntry[] = []
   const reservedExerciseIds = new Set(usedExerciseIds)
 
+  function tryAppendEntry(
+    exercise: Exercise,
+    score: number,
+    selectionNote: string | undefined,
+    strict: boolean,
+  ) {
+    const generatedEntry = createGeneratedEntry(
+      exercise,
+      history,
+      context,
+      score,
+      selectionNote,
+    )
+    const plannedExercise = context.exerciseMap[generatedEntry.exerciseId] ?? exercise
+
+    if (violatesDiversityRules(plannedExercise, selectedExercises, strict)) {
+      return false
+    }
+
+    selectedExercises.push(plannedExercise)
+    reservedExerciseIds.add(exercise.id)
+    reservedExerciseIds.add(plannedExercise.id)
+    usedExerciseIds.add(exercise.id)
+    usedExerciseIds.add(plannedExercise.id)
+    entries.push(generatedEntry)
+
+    return true
+  }
+
   for (const candidate of scoredExercises) {
     if (entries.length >= MAX_EXERCISES_PER_WORKOUT) {
       break
@@ -530,17 +719,11 @@ function buildWorkoutEntriesForDate(
       continue
     }
 
-    selectedExercises.push(resolved.exercise)
-    reservedExerciseIds.add(resolved.exercise.id)
-    usedExerciseIds.add(resolved.exercise.id)
-    entries.push(
-      createGeneratedEntry(
-        resolved.exercise,
-        history,
-        context,
-        candidate.score,
-        resolved.selectionNote,
-      ),
+    tryAppendEntry(
+      resolved.exercise,
+      candidate.score,
+      resolved.selectionNote,
+      true,
     )
   }
 
@@ -557,16 +740,11 @@ function buildWorkoutEntriesForDate(
       continue
     }
 
-    selectedExercises.push(candidate.exercise)
-    reservedExerciseIds.add(candidate.exercise.id)
-    usedExerciseIds.add(candidate.exercise.id)
-    entries.push(
-      createGeneratedEntry(
-        candidate.exercise,
-        history,
-        context,
-        candidate.score,
-      ),
+    tryAppendEntry(
+      candidate.exercise,
+      candidate.score,
+      undefined,
+      false,
     )
   }
 
@@ -611,8 +789,12 @@ export function generateWeeklyWorkoutPlans(
       ? currentWeekActiveDates
       : weekDates
   const weeklyHistory = buildWeeklyHistory(history, weekDates)
-  const usedMuscleBias = calculateUsedMuscleBias(weeklyHistory, exercises)
-  const usedExerciseIds = new Set<string>()
+  const projectedWeekEntries = createProjectedEntries(
+    weeklyHistory.flatMap((entry) => entry.entries.filter((exerciseEntry) => exerciseEntry.completed)),
+  )
+  const usedExerciseIds = new Set(
+    projectedWeekEntries.map((entry) => entry.exerciseId),
+  )
   const weekKey = weekDates[0]
   const effectivenessMap = Object.fromEntries(
     calculateEffectivenessScores(history, exercises, muscles, todayIsoDate).map((item) => [
@@ -622,11 +804,16 @@ export function generateWeeklyWorkoutPlans(
   ) as Record<string, ReturnType<typeof calculateEffectivenessScores>[number] | undefined>
 
   return activeDates.map((date, slotIndex) => {
+    const usedMuscleBias = calculateUsedMuscleBiasFromEntries(
+      projectedWeekEntries,
+      exercises,
+    )
     const needScores = calculateMuscleNeedScores(
       history,
       exerciseMap,
       muscles,
       date,
+      projectedWeekEntries,
     )
     const scoredExercises = buildScoredExercises(
       exercises,
@@ -644,6 +831,7 @@ export function generateWeeklyWorkoutPlans(
       todayIsoDate: date,
       needScoreMap,
       effectivenessMap,
+      focusMuscleIds: needScores.slice(0, 3).map((item) => item.muscleId),
     }
     const entries = buildWorkoutEntriesForDate(
       scoredExercises,
@@ -651,6 +839,7 @@ export function generateWeeklyWorkoutPlans(
       usedExerciseIds,
       selectionContext,
     )
+    projectedWeekEntries.push(...createProjectedEntries(entries))
 
     return {
       id: `planned-${date}`,

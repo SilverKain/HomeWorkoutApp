@@ -6,6 +6,7 @@ import {
   calculateRecoveryScores,
   calculateRecentMuscleLoad,
   generateWeeklyWorkoutPlans,
+  getNextTrainingDate,
   getWeekTrainingDates,
 } from '../algorithms/index.ts'
 import { exercises, muscleGroups } from '../data/index.ts'
@@ -24,6 +25,10 @@ import { getTodayDateLabel, getTodayIsoDate } from '../utils/today.ts'
 
 const TODAY_DATE = getTodayIsoDate()
 const TODAY_LABEL = getTodayDateLabel()
+
+function getMaxMetricValue(values: number[]) {
+  return Math.max(...values, 1)
+}
 
 const trainingDayLabels: Record<string, string> = {
   0: 'Вс',
@@ -48,6 +53,27 @@ function getExerciseMap() {
 function getDayLabel(isoDate: string) {
   const date = new Date(`${isoDate}T00:00:00`)
   return trainingDayLabels[date.getDay()] ?? isoDate
+}
+
+function addDays(isoDate: string, offset: number) {
+  const date = new Date(`${isoDate}T00:00:00`)
+  date.setDate(date.getDate() + offset)
+  return date.toISOString().slice(0, 10)
+}
+
+function getUpcomingTrainingDates(startIsoDate: string, count: number) {
+  const upcomingDates: string[] = []
+  let cursor = startIsoDate
+
+  while (upcomingDates.length < count) {
+    const nextDate =
+      upcomingDates.length === 0 ? getNextTrainingDate(cursor) : getNextTrainingDate(addDays(cursor, 1))
+
+    upcomingDates.push(nextDate)
+    cursor = nextDate
+  }
+
+  return upcomingDates
 }
 
 function getWeekStatusLabel(
@@ -109,6 +135,7 @@ export function HomePage({
   const [plannedWorkouts, setPlannedWorkouts] = useState(() => loadPlannedWorkouts())
   const [message, setMessage] = useState('')
   const [expandedReasonKey, setExpandedReasonKey] = useState<string | null>(null)
+  const [generatorDate, setGeneratorDate] = useState(() => getNextTrainingDate(TODAY_DATE))
 
   useEffect(() => {
     const syncHomeState = () => {
@@ -116,32 +143,14 @@ export function HomePage({
       setHistory(loadWorkoutHistory())
     }
 
-    window.addEventListener(
-      PLANNED_WORKOUTS_UPDATED_EVENT,
-      syncHomeState,
-    )
-    window.addEventListener(
-      WORKOUT_HISTORY_UPDATED_EVENT,
-      syncHomeState,
-    )
-    window.addEventListener(
-      FIREBASE_SYNC_EVENT,
-      syncHomeState,
-    )
+    window.addEventListener(PLANNED_WORKOUTS_UPDATED_EVENT, syncHomeState)
+    window.addEventListener(WORKOUT_HISTORY_UPDATED_EVENT, syncHomeState)
+    window.addEventListener(FIREBASE_SYNC_EVENT, syncHomeState)
 
     return () => {
-      window.removeEventListener(
-        PLANNED_WORKOUTS_UPDATED_EVENT,
-        syncHomeState,
-      )
-      window.removeEventListener(
-        WORKOUT_HISTORY_UPDATED_EVENT,
-        syncHomeState,
-      )
-      window.removeEventListener(
-        FIREBASE_SYNC_EVENT,
-        syncHomeState,
-      )
+      window.removeEventListener(PLANNED_WORKOUTS_UPDATED_EVENT, syncHomeState)
+      window.removeEventListener(WORKOUT_HISTORY_UPDATED_EVENT, syncHomeState)
+      window.removeEventListener(FIREBASE_SYNC_EVENT, syncHomeState)
     }
   }, [])
 
@@ -157,6 +166,7 @@ export function HomePage({
     resolvedMuscleGroups,
     TODAY_DATE,
   ).slice(0, 6)
+  const maxRecoveryLoadValue = getMaxMetricValue(recoveryScores.map((item) => item.recentLoad))
 
   const needScores = calculateMuscleNeedScores(
     history,
@@ -178,6 +188,7 @@ export function HomePage({
 
   const maxLoadValue = Math.max(...loadSummary.map((item) => item.load), 1)
   const musclesNeedingWork = needScores.slice(0, 3)
+  const generatorDateOptions = getUpcomingTrainingDates(TODAY_DATE, 6)
   const completedWorkoutCount = history.filter((workout) =>
     workout.entries.some((entry) => entry.completed),
   ).length
@@ -195,7 +206,7 @@ export function HomePage({
       exercises,
       resolvedMuscleGroups,
       history,
-      TODAY_DATE,
+      generatorDate,
     )
 
     savePlannedWorkouts(nextPlans)
@@ -203,8 +214,8 @@ export function HomePage({
     setHistory(loadWorkoutHistory())
     setMessage(
       nextPlans.length > 0
-        ? `Создан недельный план. Ближайшая тренировка запланирована на ${nextPlans[0].date}.`
-        : 'На этой неделе больше не осталось будущих тренировочных дней.',
+        ? `План пересчитан от ${generatorDate}. Ближайшая сгенерированная тренировка поставлена на ${nextPlans[0].date}.`
+        : `После ${generatorDate} в этой неделе больше нет будущих тренировочных дней.`,
     )
   }
 
@@ -217,8 +228,7 @@ export function HomePage({
       <div className="page-card__header">
         <h2 className="page-card__title">Главная</h2>
         <p className="page-card__text">
-          Здесь собран обзор ближайшей тренировки, восстановления и текущей
-          нагрузки по мышцам.
+          Здесь собран обзор ближайшей тренировки, восстановления и текущей нагрузки по мышцам.
         </p>
       </div>
 
@@ -231,22 +241,21 @@ export function HomePage({
               <p>Дата: {nextPlannedWorkout.date}</p>
               <p>Упражнений: {nextPlannedWorkout.entries.length}</p>
               <p>
-                Первые акценты:{' '}
+                Акценты:{' '}
                 {nextPlannedWorkout.entries
-                  .slice(0, 3)
                   .map((entry) => exerciseMap[entry.exerciseId]?.name ?? entry.exerciseId)
                   .join(', ')}
               </p>
 
               <div className="selection-reasons-list">
-                {nextPlannedWorkout.entries.slice(0, 3).map((entry, index) => {
+                {nextPlannedWorkout.entries.map((entry, index) => {
                   const exercise = exerciseMap[entry.exerciseId]
                   const reasonKey = `home-${nextPlannedWorkout.id}-${entry.exerciseId}-${index}`
 
                   return (
                     <div key={reasonKey} className="selection-reasons">
                       <p>
-                        {exercise?.name ?? entry.exerciseId} — {entry.selectionScore ?? '—'}/100
+                        {exercise?.name ?? entry.exerciseId} - {entry.selectionScore ?? '-'} / 100
                       </p>
                       {entry.selectionReasons && entry.selectionReasons.length > 0 ? (
                         <>
@@ -275,12 +284,25 @@ export function HomePage({
             <>
               <h3>План пока не создан</h3>
               <p>На {TODAY_LABEL} будущая тренировка ещё не сохранена.</p>
-              <p>Нажми кнопку справа, и приложение соберёт неделю Пн / Ср / Пт.</p>
+              <p>Выбери дату справа, и приложение соберёт план начиная с неё.</p>
             </>
           )}
         </div>
 
         <div className="home-hero__actions">
+          <label className="home-hero__select">
+            <span>На какой день добавить тренировку</span>
+            <select
+              value={generatorDate}
+              onChange={(event) => setGeneratorDate(event.target.value)}
+            >
+              {generatorDateOptions.map((date) => (
+                <option key={date} value={date}>
+                  {date} ({getDayLabel(date)})
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             className="home-hero__button"
@@ -291,6 +313,68 @@ export function HomePage({
           <p className="home-hero__message">{message}</p>
         </div>
       </div>
+
+      <section className="home-panel home-formula">
+        <div className="home-panel__header">
+          <h3>Формула генерации</h3>
+          <p>Ниже показан расчёт, по которому выбираются упражнения внутри одной тренировки.</p>
+        </div>
+        <div className="home-formula__content">
+          <p>
+            Генератор оценивает каждое упражнение по нескольким критериям сразу и не берёт его в
+            план только потому, что оно сильное само по себе.
+          </p>
+          <p>
+            Сначала система смотрит, какие мышцы уже восстановились, какие недополучили нагрузку за
+            последние дни и какие мышцы входят в фокус следующей тренировки.
+          </p>
+          <p>
+            Затем упражнения получают больше очков, если они хорошо нагружают именно эти мышцы,
+            дают полезный тренировочный стимул и не создают лишнюю утомляемость.
+          </p>
+          <p>
+            Внутри одной тренировки генератор специально избегает повторов подряд: если следующее
+            упражнение снова бьёт по той же основной мышце, той же recovery zone или почти
+            повторяет предыдущее движение, его приоритет снижается.
+          </p>
+          <p>
+            В итоге выше поднимаются упражнения, которые лучше совпадают с восстановлением,
+            потребностью мышц в нагрузке, фокусом тренировки и при этом делают весь план более
+            сбалансированным.
+          </p>
+          <p>
+            <code>
+              score = targetedNeed + focusBonus + movementBonus + diversityBonus - fatiguePenalty
+            </code>
+          </p>
+          <p>
+            <code>
+              targetedNeed = Σ coefficient * max(0, needScore * 0.82 + recoveryScore * 0.24 + max(0, 100 - recentLoad7d * 4) * 0.18 - usedMuscleBias * 10)
+            </code>
+          </p>
+          <p>
+            <code>focusBonus = Σ coefficient(top-3 focus muscles) * 18</code>
+          </p>
+          <p>
+            <code>movementBonus = baseEffectiveness * 20</code> для ранних слотов и{' '}
+            <code>baseEffectiveness * 18</code> для остальных.
+          </p>
+          <p>
+            <code>diversityBonus = numberOfTargetedMuscles * 2</code>
+          </p>
+          <p>
+            <code>fatiguePenalty = fatigueLevel * 2.5</code>
+          </p>
+          <p>
+            Запрет повторов подряд в одной тренировке: упражнение отклоняется, если оно идёт подряд в той же recovery zone,
+            повторяет ту же основную мышцу или даёт слишком большое мышечное пересечение с предыдущим движением.
+          </p>
+          <p>
+            Дополнительно генератор ограничивает число повторов одной primary muscle, одной recovery zone, похожих движений и
+            одинакового оборудования в пределах одной тренировки.
+          </p>
+        </div>
+      </section>
 
       <div className="page-card__grid">
         <article className="info-tile info-tile--account">
@@ -372,6 +456,17 @@ export function HomePage({
                   label={`Восстановление: ${item.score}/100`}
                 />
                 <p>Недавняя нагрузка: {item.recentLoad.toFixed(2)}</p>
+                <MetricBar
+                  value={item.recentLoad}
+                  max={maxRecoveryLoadValue}
+                  tone="danger"
+                  label={`Доля недавней нагрузки: ${item.recentLoad.toFixed(2)}`}
+                />
+                <p>За день без нагрузки: +{item.dailyRecoveryGain}</p>
+                <p>
+                  До полного восстановления:{' '}
+                  {item.daysToFullRecovery === 0 ? 'сейчас' : `${item.daysToFullRecovery} дн.`}
+                </p>
               </article>
             ))}
           </div>
