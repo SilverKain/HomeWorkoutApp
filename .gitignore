@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Local deployment staging directories
+.codex-gh-pages-deploy-*/
+.deploy-gh-pages/
+.sites-deploy-tmp/
 *.local
 .env
 .env.*
