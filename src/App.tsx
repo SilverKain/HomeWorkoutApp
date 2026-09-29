@@ -10,6 +10,7 @@ import { SettingsPage } from './pages/SettingsPage.tsx'
 import { navigationItems, type NavigationId } from './types/navigation.ts'
 import {
   FIREBASE_SYNC_EVENT,
+  FIREBASE_SYNC_ERROR_EVENT,
   bootstrapFirebaseTrainingCache,
   getCurrentFirebaseUser,
   signInWithGoogle,
@@ -29,32 +30,51 @@ function App() {
 
   useEffect(() => {
     let unsubscribeSnapshots: (() => void) | null = null
+    let generation = 0
 
-    const unsubscribeAuth = subscribeToFirebaseAuth((user) => {
-      setFirebaseUser(user)
-      setSyncStatus(user ? 'Синхронизация аккаунта активна' : 'Локальный режим')
-
-      void bootstrapFirebaseTrainingCache().then(() => {
-        setSyncVersion((value) => value + 1)
-      })
-
-      void subscribeToFirebaseTrainingState().then((unsubscribe) => {
-        unsubscribeSnapshots?.()
-        unsubscribeSnapshots = unsubscribe
-      })
-    })
-
-    const handleSync = () => {
-      setSyncVersion((value) => value + 1)
-      setSyncStatus('Данные синхронизированы')
+    const handleSync = () => setSyncVersion((value) => value + 1)
+    const handleSyncError = () => {
+      setSyncStatus('Не удалось синхронизировать данные. Проверь подключение и обнови страницу.')
     }
 
     window.addEventListener(FIREBASE_SYNC_EVENT, handleSync)
+    window.addEventListener(FIREBASE_SYNC_ERROR_EVENT, handleSyncError)
+
+    const unsubscribeAuth = subscribeToFirebaseAuth((user) => {
+      const currentGeneration = ++generation
+      unsubscribeSnapshots?.()
+      unsubscribeSnapshots = null
+      setFirebaseUser(user)
+      setSyncStatus(user ? 'Синхронизация подключается...' : 'Локальный режим')
+      if (!user) return
+
+      void (async () => {
+        const result = await bootstrapFirebaseTrainingCache(user.uid)
+        if (currentGeneration !== generation) return
+        if (!result.synced) {
+          handleSyncError()
+          return
+        }
+        const unsubscribe = await subscribeToFirebaseTrainingState(user.uid)
+        if (currentGeneration !== generation) {
+          unsubscribe()
+          return
+        }
+        unsubscribeSnapshots = unsubscribe
+        setSyncStatus(user.isAnonymous
+          ? 'Для синхронизации телефона и ПК войди в один Google-аккаунт на обоих устройствах.'
+          : 'Синхронизация аккаунта подключена')
+      })().catch(() => {
+        if (currentGeneration === generation) handleSyncError()
+      })
+    })
 
     return () => {
+      generation++
       unsubscribeAuth()
       unsubscribeSnapshots?.()
       window.removeEventListener(FIREBASE_SYNC_EVENT, handleSync)
+      window.removeEventListener(FIREBASE_SYNC_ERROR_EVENT, handleSyncError)
     }
   }, [])
 

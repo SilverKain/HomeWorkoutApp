@@ -119,6 +119,13 @@ export async function initializeFirebaseAuthSession() {
     return null
   }
 
+  // Auth can change in another tab or before a sign-in promise resolves.
+  // Never reuse a resolved promise containing the previous account.
+  const currentUser = getFirebaseAuth().currentUser
+  if (currentUser) {
+    return currentUser
+  }
+
   if (!authReadyPromise) {
     authReadyPromise = (async () => {
       await ensureRedirectResultHandled()
@@ -131,9 +138,8 @@ export async function initializeFirebaseAuthSession() {
 
       const credentials = await signInAnonymously(auth)
       return credentials.user
-    })().catch((error) => {
+    })().finally(() => {
       authReadyPromise = null
-      throw error
     })
   }
 
@@ -160,7 +166,6 @@ export async function signInWithGoogle() {
 
   try {
     const credentials = await signInWithPopup(auth, provider)
-    authReadyPromise = Promise.resolve(credentials.user)
     return {
       mode: 'popup' as const,
       user: credentials.user,

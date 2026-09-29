@@ -29,6 +29,7 @@ const PLANS_DOC_ID = 'planned_workouts'
 const PRIORITIES_DOC_ID = 'muscle_priorities'
 
 export const FIREBASE_SYNC_EVENT = 'home-workout-firebase-sync'
+export const FIREBASE_SYNC_ERROR_EVENT = 'home-workout-firebase-sync-error'
 
 interface FirestorePayload<T> {
   payload: T
@@ -93,9 +94,15 @@ async function readRemotePayload<T>(userId: string, documentId: string): Promise
 }
 
 async function readLegacyRemotePayload<T>(documentId: string): Promise<T | null> {
-  const snapshot = await getDoc(getLegacyStateDocument(documentId))
+  // Legacy shared documents may no longer be accessible under account-only rules.
+  const snapshot = await getDoc(getLegacyStateDocument(documentId)).catch((error: unknown) => {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'permission-denied') {
+      return null
+    }
+    throw error
+  })
 
-  if (!snapshot.exists()) {
+  if (!snapshot?.exists()) {
     return null
   }
 
@@ -105,16 +112,21 @@ async function readLegacyRemotePayload<T>(documentId: string): Promise<T | null>
 
 async function writeRemotePayload<T>(userId: string, documentId: string, payload: T) {
   await setDoc(getUserStateDocument(userId, documentId), {
-    payload,
+    // Match the local JSON cache: optional fields (for example weekKey on
+    // manually edited plans) must be omitted, since Firestore rejects undefined.
+    payload: JSON.parse(JSON.stringify(payload)) as T,
     updatedAt: new Date().toISOString(),
   } satisfies FirestorePayload<T>)
 }
 
 function logSyncError(action: string, error: unknown) {
   console.warn(`[firebase-sync] ${action}`, error)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(FIREBASE_SYNC_ERROR_EVENT))
+  }
 }
 
-export async function bootstrapFirebaseTrainingCache() {
+export async function bootstrapFirebaseTrainingCache(expectedUserId?: string) {
   if (!isFirebaseConfigured()) {
     return {
       synced: false,
@@ -125,6 +137,10 @@ export async function bootstrapFirebaseTrainingCache() {
   try {
     const user = await initializeFirebaseAuthSession()
     const userId = user?.uid ?? getCurrentFirebaseUserId()
+
+    if (expectedUserId && expectedUserId !== userId) {
+      return { synced: false, reason: 'Account changed' }
+    }
 
     if (!userId) {
       return {
@@ -152,6 +168,10 @@ export async function bootstrapFirebaseTrainingCache() {
     const resolvedPlans = remotePlans ?? legacyPlans
     const resolvedPriorities = remotePriorities ?? legacyPriorities
 
+    if (getCurrentFirebaseUserId() !== userId) {
+      return { synced: false, reason: 'Account changed' }
+    }
+
     if (remoteHistory == null && legacyHistory) {
       await writeRemotePayload(userId, HISTORY_DOC_ID, legacyHistory)
     }
@@ -162,6 +182,10 @@ export async function bootstrapFirebaseTrainingCache() {
 
     if (remotePriorities == null && legacyPriorities) {
       await writeRemotePayload(userId, PRIORITIES_DOC_ID, legacyPriorities)
+    }
+
+    if (getCurrentFirebaseUserId() !== userId) {
+      return { synced: false, reason: 'Account changed' }
     }
 
     if (resolvedHistory) {
@@ -218,7 +242,7 @@ export async function bootstrapFirebaseTrainingCache() {
   }
 }
 
-export async function subscribeToFirebaseTrainingState() {
+export async function subscribeToFirebaseTrainingState(expectedUserId?: string) {
   if (!isFirebaseConfigured()) {
     return () => undefined
   }
@@ -226,12 +250,13 @@ export async function subscribeToFirebaseTrainingState() {
   const user = await initializeFirebaseAuthSession()
   const userId = user?.uid ?? getCurrentFirebaseUserId()
 
-  if (!userId) {
+  if (!userId || (expectedUserId && expectedUserId !== userId)) {
     return () => undefined
   }
 
   const unsubscriptions = [
     onSnapshot(getUserStateDocument(userId, HISTORY_DOC_ID), (snapshot) => {
+      if (getCurrentFirebaseUserId() !== userId) return
       const data = snapshot.data() as Partial<FirestorePayload<WorkoutHistoryEntry[]>> | undefined
 
       if (!data?.payload) {
@@ -240,8 +265,9 @@ export async function subscribeToFirebaseTrainingState() {
 
       writeLocalJson(WORKOUT_HISTORY_STORAGE_KEY, data.payload)
       emitFirebaseSyncEvent()
-    }),
+    }, (error) => logSyncError('history subscription failed', error)),
     onSnapshot(getUserStateDocument(userId, PLANS_DOC_ID), (snapshot) => {
+      if (getCurrentFirebaseUserId() !== userId) return
       const data = snapshot.data() as Partial<FirestorePayload<PlannedWorkoutEntry[]>> | undefined
 
       if (!data?.payload) {
@@ -250,8 +276,9 @@ export async function subscribeToFirebaseTrainingState() {
 
       writeLocalJson(PLANNED_WORKOUTS_STORAGE_KEY, data.payload)
       emitFirebaseSyncEvent()
-    }),
+    }, (error) => logSyncError('plans subscription failed', error)),
     onSnapshot(getUserStateDocument(userId, PRIORITIES_DOC_ID), (snapshot) => {
+      if (getCurrentFirebaseUserId() !== userId) return
       const data = snapshot.data() as Partial<FirestorePayload<MusclePriorityOverrides>> | undefined
 
       if (!data?.payload) {
@@ -260,7 +287,7 @@ export async function subscribeToFirebaseTrainingState() {
 
       writeLocalJson(SETTINGS_STORAGE_KEY, data.payload)
       emitFirebaseSyncEvent()
-    }),
+    }, (error) => logSyncError('priorities subscription failed', error)),
   ]
 
   return () => {

@@ -22,6 +22,7 @@ export {
 export {
   bootstrapFirebaseTrainingCache,
   FIREBASE_SYNC_EVENT,
+  FIREBASE_SYNC_ERROR_EVENT,
   subscribeToFirebaseTrainingState,
   syncWorkoutHistoryToFirebase,
   syncPlannedWorkoutsToFirebase,
