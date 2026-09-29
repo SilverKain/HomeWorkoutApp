@@ -15,6 +15,7 @@ export { default as floorDumbbellPulloverImage } from '../assets/exercises/floor
 export { default as frontRaisesImage } from '../assets/exercises/front-raises.png'
 export { default as gluteBridgeImage } from '../assets/exercises/glute-bridge.png'
 export { default as hammerCurlsImage } from '../assets/exercises/hammer-curls.png'
+export { default as hollowHoldBoatImage } from '../assets/exercises/hollow-hold-boat.png'
 export { default as lateralRaisesImage } from '../assets/exercises/lateral-raises.png'
 export { default as oneArmDumbbellRowImage } from '../assets/exercises/one-arm-dumbbell-row.png'
 export { default as overheadTricepsExtensionImage } from '../assets/exercises/overhead-triceps-extension.png'

@@ -17,6 +17,7 @@ import {
   frontRaisesImage,
   gluteBridgeImage,
   hammerCurlsImage,
+  hollowHoldBoatImage,
   lateralRaisesImage,
   oneArmDumbbellRowImage,
   overheadTricepsExtensionImage,
@@ -357,6 +358,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'hollow-hold-boat',
+    imageSrc: hollowHoldBoatImage,
     name: 'Лодочка',
     description: 'Статическое удержание корпуса и ног в напряжении.',
     equipment: 'Собственный вес',
