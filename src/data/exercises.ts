@@ -25,6 +25,7 @@ import {
   pushUpsClassicImage,
   pushUpsCloseImage,
   pushUpsPausedImage,
+  pushUpsPikeImage,
   pushUpsSlowImage,
   rearDeltFlyImage,
   romanianDeadliftDumbbellsImage,
@@ -120,6 +121,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'push-ups-pike',
+    imageSrc: pushUpsPikeImage,
     name: 'Отжимания пикой',
     description: 'Вариант отжиманий с акцентом на плечи.',
     equipment: 'Собственный вес',
