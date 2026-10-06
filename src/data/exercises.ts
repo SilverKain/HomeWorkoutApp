@@ -10,8 +10,10 @@ import {
   calfRaisesImage,
   calfRaisesDumbbellsImage,
   crunchesImage,
+  dumbbellDeadBugImage,
   dumbbellLungesImage,
   dumbbellOverheadPressImage,
+  dumbbellRussianTwistImage,
   floorDumbbellFlyImage,
   floorDumbbellPulloverImage,
   frontRaisesImage,
@@ -36,6 +38,7 @@ import {
   singleArmLateralRaiseImage,
   singleLegGluteBridgeImage,
   supermanHoldImage,
+  tricepsKickbacksImage,
   legRaisesImage,
 } from './exerciseImages.ts'
 
@@ -594,6 +597,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'triceps-kickbacks',
+    imageSrc: tricepsKickbacksImage,
     name: 'Разгибание рук с гантелями в наклоне',
     description: 'Разгибание рук назад в наклоне для трицепса.',
     equipment: '2 гантели по 1 кг',
@@ -707,6 +711,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'dumbbell-dead-bug',
+    imageSrc: dumbbellDeadBugImage,
     name: 'Мёртвый жук с гантелью',
     description: 'Стабилизационное упражнение лёжа с удержанием одной гантели.',
     equipment: '1 гантель 1 кг',
@@ -722,6 +727,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'dumbbell-russian-twist',
+    imageSrc: dumbbellRussianTwistImage,
     name: 'Русские повороты с гантелью',
     description: 'Повороты корпуса сидя с удержанием одной гантели.',
     equipment: '1 гантель 1 кг',
