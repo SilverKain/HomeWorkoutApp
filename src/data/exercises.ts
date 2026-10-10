@@ -3,6 +3,7 @@ import {
   bentOverDumbbellRowImage,
   bicepCurlsImage,
   birdDogImage,
+  bodyweightSquatImage,
   bodyweightSquatPausedImage,
   bodyweightSquatSlowImage,
   bulgarianSplitSquatImage,
@@ -14,6 +15,7 @@ import {
   dumbbellLungesImage,
   dumbbellOverheadPressImage,
   dumbbellRussianTwistImage,
+  dumbbellSquatImage,
   floorDumbbellFlyImage,
   floorDumbbellPulloverImage,
   frontRaisesImage,
@@ -29,6 +31,7 @@ import {
   pushUpsPausedImage,
   pushUpsPikeImage,
   pushUpsSlowImage,
+  pushUpsWideImage,
   rearDeltFlyImage,
   romanianDeadliftDumbbellsImage,
   reverseLungesImage,
@@ -61,6 +64,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'push-ups-wide',
+    imageSrc: pushUpsWideImage,
     name: 'Широкие отжимания',
     description: 'Отжимания с широкой постановкой рук для акцента на грудь.',
     equipment: 'Собственный вес',
@@ -156,6 +160,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'bodyweight-squat',
+    imageSrc: bodyweightSquatImage,
     name: 'Приседания',
     description: 'Классические приседания с собственным весом.',
     equipment: 'Собственный вес',
@@ -612,6 +617,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'dumbbell-squat',
+    imageSrc: dumbbellSquatImage,
     name: 'Приседания с гантелями',
     description: 'Приседания с двумя гантелями в руках вдоль корпуса.',
     equipment: '2 гантели по 1 кг',
