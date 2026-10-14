@@ -18,6 +18,7 @@ export { default as floorDumbbellFlyImage } from '../assets/exercises/floor-dumb
 export { default as floorDumbbellPulloverImage } from '../assets/exercises/floor-dumbbell-pullover.png'
 export { default as frontRaisesImage } from '../assets/exercises/front-raises.png'
 export { default as gluteBridgeImage } from '../assets/exercises/glute-bridge.png'
+export { default as gluteBridgeDumbbellImage } from '../assets/exercises/glute-bridge-dumbbell.png'
 export { default as hammerCurlsImage } from '../assets/exercises/hammer-curls.png'
 export { default as hollowHoldBoatImage } from '../assets/exercises/hollow-hold-boat.png'
 export { default as lateralRaisesImage } from '../assets/exercises/lateral-raises.png'

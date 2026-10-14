@@ -20,6 +20,7 @@ import {
   floorDumbbellPulloverImage,
   frontRaisesImage,
   gluteBridgeImage,
+  gluteBridgeDumbbellImage,
   hammerCurlsImage,
   hollowHoldBoatImage,
   lateralRaisesImage,
@@ -687,6 +688,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'glute-bridge-dumbbell',
+    imageSrc: gluteBridgeDumbbellImage,
     name: 'Ягодичный мост с гантелью',
     description: 'Ягодичный мост с одной гантелью, удерживаемой на тазу.',
     equipment: '1 гантель 1 кг',
