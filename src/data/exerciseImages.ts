@@ -34,6 +34,7 @@ export { default as pushUpsWideImage } from '../assets/exercises/push-ups-wide.p
 export { default as rearDeltFlyImage } from '../assets/exercises/rear-delt-fly.png'
 export { default as romanianDeadliftDumbbellsImage } from '../assets/exercises/romanian-deadlift-dumbbells.png'
 export { default as reverseLungesImage } from '../assets/exercises/reverse-lunges.png'
+export { default as reverseCrunchesImage } from '../assets/exercises/reverse-crunches.png'
 export { default as reverseSnowAngelsImage } from '../assets/exercises/reverse-snow-angels.png'
 export { default as sidePlankImage } from '../assets/exercises/side-plank.png'
 export { default as singleArmFrontRaiseImage } from '../assets/exercises/single-arm-front-raise.png'

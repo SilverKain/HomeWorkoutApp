@@ -36,6 +36,7 @@ import {
   rearDeltFlyImage,
   romanianDeadliftDumbbellsImage,
   reverseLungesImage,
+  reverseCrunchesImage,
   reverseSnowAngelsImage,
   sidePlankImage,
   singleArmFrontRaiseImage,
@@ -340,6 +341,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'reverse-crunches',
+    imageSrc: reverseCrunchesImage,
     name: 'Обратные скручивания',
     description: 'Подтягивание таза к грудной клетке лёжа на спине.',
     equipment: 'Собственный вес',
