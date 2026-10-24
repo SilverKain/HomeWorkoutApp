@@ -17,6 +17,7 @@ import {
   dumbbellRussianTwistImage,
   dumbbellSquatImage,
   floorDumbbellFlyImage,
+  floorDumbbellPressImage,
   floorDumbbellPulloverImage,
   frontRaisesImage,
   gluteBridgeImage,
@@ -418,6 +419,7 @@ export const exercises: Exercise[] = [
   },
   {
     id: 'floor-dumbbell-press',
+    imageSrc: floorDumbbellPressImage,
     name: 'Жим гантелей лёжа на полу',
     description: 'Жим двух гантелей лёжа на полу в полной контролируемой амплитуде.',
     equipment: '2 гантели по 1 кг',

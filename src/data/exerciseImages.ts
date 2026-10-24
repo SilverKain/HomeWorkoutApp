@@ -15,6 +15,7 @@ export { default as dumbbellOverheadPressImage } from '../assets/exercises/dumbb
 export { default as dumbbellRussianTwistImage } from '../assets/exercises/dumbbell-russian-twist.png'
 export { default as dumbbellSquatImage } from '../assets/exercises/dumbbell-squat.png'
 export { default as floorDumbbellFlyImage } from '../assets/exercises/floor-dumbbell-fly.png'
+export { default as floorDumbbellPressImage } from '../assets/exercises/floor-dumbbell-press.png'
 export { default as floorDumbbellPulloverImage } from '../assets/exercises/floor-dumbbell-pullover.png'
 export { default as frontRaisesImage } from '../assets/exercises/front-raises.png'
 export { default as gluteBridgeImage } from '../assets/exercises/glute-bridge.png'
